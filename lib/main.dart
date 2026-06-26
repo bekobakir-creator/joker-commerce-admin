@@ -1,7 +1,11 @@
 ﻿import 'dart:convert';
+import 'dart:typed_data';
+// ignore: deprecated_member_use, avoid_web_libraries_in_flutter
+import 'dart:html' as html;
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 void main() {
   runApp(const JokerCommerceAdminApp());
@@ -56,6 +60,212 @@ class AdminApi {
     return list
         .map((item) => AdminProduct.fromJson(item as Map<String, dynamic>))
         .toList();
+  }
+  Future<List<AdminCategory>> fetchCategories() async {
+    final uri = Uri.parse('$baseUrl/categories?tenant=$tenantCode');
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'X-Tenant-Code': tenantCode,
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Categories API Error ${response.statusCode}: ${response.body}');
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    final list = json['data'] as List<dynamic>? ?? [];
+
+    return list
+        .map((item) => AdminCategory.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<String> uploadProductImage({
+    required List<int> bytes,
+    required String fileName,
+  }) async {
+    final uri = Uri.parse('$baseUrl/admin/uploads/product-image?tenant=$tenantCode');
+
+    final extension = fileName.contains('.')
+        ? fileName.split('.').last.toLowerCase()
+        : 'jpg';
+    final subtype = extension == 'jpg' ? 'jpeg' : extension;
+
+    final request = http.MultipartRequest('POST', uri)
+      ..headers.addAll({
+        'Accept': 'application/json',
+        'X-Tenant-Code': tenantCode,
+      })
+      ..files.add(
+        http.MultipartFile.fromBytes(
+          'image',
+          bytes,
+          filename: fileName,
+          contentType: MediaType('image', subtype),
+        ),
+      );
+
+    final streamed = await request.send();
+    final response = await http.Response.fromStream(streamed);
+
+    if (response.statusCode != 200) {
+      throw Exception('Upload API Error ${response.statusCode}: ${response.body}');
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    final rawUrl = json['url']?.toString() ?? '';
+
+    if (rawUrl.isEmpty) {
+      return '';
+    }
+
+    final apiOrigin = Uri.parse(baseUrl).origin;
+
+    return rawUrl
+        .replaceFirst('http://localhost', apiOrigin)
+        .replaceFirst('http://127.0.0.1:8099', apiOrigin)
+        .replaceFirst('http://127.0.0.1', apiOrigin);
+  }
+
+  Future<void> createProduct(CreateProductRequest request) async {
+    final uri = Uri.parse('$baseUrl/admin/products?tenant=$tenantCode');
+
+    final response = await http.post(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-Tenant-Code': tenantCode,
+      },
+      body: jsonEncode(request.toJson()),
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception('Create Product API Error ${response.statusCode}: ${response.body}');
+    }
+  }
+}
+
+class AdminCategory {
+  const AdminCategory({
+    required this.id,
+    required this.name,
+  });
+
+  final int id;
+  final String name;
+
+  factory AdminCategory.fromJson(Map<String, dynamic> json) {
+    return AdminCategory(
+      id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      name: json['name']?.toString() ?? '',
+    );
+  }
+}
+
+class CreateProductVariantInput {
+  const CreateProductVariantInput({
+    required this.name,
+    required this.sku,
+    required this.price,
+    required this.salePrice,
+    required this.quantity,
+  });
+
+  final String name;
+  final String? sku;
+  final double? price;
+  final double? salePrice;
+  final int quantity;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'sku': sku,
+      'price': price,
+      'sale_price': salePrice,
+      'status': 'active',
+      'inventory': [
+        {
+          'warehouse_id': 1,
+          'quantity': quantity,
+          'reserved_quantity': 0,
+          'low_stock_alert_quantity': 1,
+        }
+      ],
+    };
+  }
+}
+
+class CreateProductRequest {
+  const CreateProductRequest({
+    required this.categoryId,
+    required this.name,
+    required this.sku,
+    required this.price,
+    required this.salePrice,
+    required this.shortDescription,
+    required this.mainImageUrl,
+    required this.quantity,
+    required this.isFeatured,
+    required this.hasVariants,
+    required this.variants,
+  });
+
+  final int? categoryId;
+  final String name;
+  final String? sku;
+  final double price;
+  final double? salePrice;
+  final String? shortDescription;
+  final String? mainImageUrl;
+  final int quantity;
+  final bool isFeatured;
+  final bool hasVariants;
+  final List<CreateProductVariantInput> variants;
+
+  Map<String, dynamic> toJson() {
+    final body = <String, dynamic>{
+      'category_id': categoryId,
+      'name': name,
+      'sku': sku,
+      'price': price,
+      'sale_price': salePrice,
+      'short_description': shortDescription,
+      'main_image_url': mainImageUrl,
+      'is_featured': isFeatured,
+      'has_variants': hasVariants,
+      'requires_prescription': false,
+      'status': 'active',
+    };
+
+    if (mainImageUrl != null && mainImageUrl!.trim().isNotEmpty) {
+      body['images'] = [
+        {
+          'image_url': mainImageUrl,
+          'sort_order': 1,
+        }
+      ];
+    }
+
+    if (hasVariants) {
+      body['variants'] = variants.map((variant) => variant.toJson()).toList();
+    } else {
+      body['inventory'] = [
+        {
+          'warehouse_id': 1,
+          'quantity': quantity,
+          'reserved_quantity': 0,
+          'low_stock_alert_quantity': 2,
+        }
+      ];
+    }
+
+    return body;
   }
 }
 
@@ -175,6 +385,26 @@ class _ProductsDashboardPageState extends State<ProductsDashboardPage> {
     );
   }
 
+  Future<void> _openAddProductDialog() async {
+    final created = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AddProductDialog(api: _api),
+    );
+
+    if (created == true) {
+      _reload();
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تمت إضافة المنتج بنجاح')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Directionality(
@@ -204,7 +434,7 @@ class _ProductsDashboardPageState extends State<ProductsDashboardPage> {
               ),
               drawer: const Drawer(child: AdminSidebar(isDrawer: true)),
               floatingActionButton: FloatingActionButton.extended(
-                onPressed: () => _soon('إضافة منتج'),
+                onPressed: _openAddProductDialog,
                 icon: const Icon(Icons.add),
                 label: const Text('إضافة'),
               ),
@@ -213,7 +443,7 @@ class _ProductsDashboardPageState extends State<ProductsDashboardPage> {
                 searchController: _searchController,
                 search: _search,
                 onReload: _reload,
-                onAdd: () => _soon('إضافة منتج'),
+                onAdd: _openAddProductDialog,
                 onEdit: (product) => _soon('تعديل المنتج رقم ${product.id}'),
                 isMobile: true,
               ),
@@ -230,7 +460,7 @@ class _ProductsDashboardPageState extends State<ProductsDashboardPage> {
                     searchController: _searchController,
                     search: _search,
                     onReload: _reload,
-                    onAdd: () => _soon('إضافة منتج'),
+                    onAdd: _openAddProductDialog,
                     onEdit: (product) => _soon('تعديل المنتج رقم ${product.id}'),
                     isMobile: false,
                   ),
@@ -1040,6 +1270,792 @@ class SidebarItem extends StatelessWidget {
   }
 }
 
+class AddProductDialog extends StatefulWidget {
+  const AddProductDialog({
+    super.key,
+    required this.api,
+  });
+
+  final AdminApi api;
+
+  @override
+  State<AddProductDialog> createState() => _AddProductDialogState();
+}
+
+class _VariantDraft {
+  _VariantDraft();
+
+  final TextEditingController name = TextEditingController();
+  final TextEditingController sku = TextEditingController();
+  final TextEditingController price = TextEditingController();
+  final TextEditingController salePrice = TextEditingController();
+  final TextEditingController quantity = TextEditingController(text: '0');
+
+  void dispose() {
+    name.dispose();
+    sku.dispose();
+    price.dispose();
+    salePrice.dispose();
+    quantity.dispose();
+  }
+}
+
+class _AddProductDialogState extends State<AddProductDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _skuController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
+  final TextEditingController _salePriceController = TextEditingController();
+  final TextEditingController _shortDescriptionController = TextEditingController();
+  final TextEditingController _imageUrlController = TextEditingController();
+  final TextEditingController _quantityController = TextEditingController(text: '0');
+
+  late Future<List<AdminCategory>> _categoriesFuture;
+
+  final List<_VariantDraft> _variants = [];
+
+  int? _categoryId;
+  bool _isFeatured = false;
+  bool _hasVariants = false;
+  bool _isSaving = false;
+  bool _isUploadingImage = false;
+  String? _selectedImageName;
+  String? _localPreviewUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _categoriesFuture = widget.api.fetchCategories();
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _skuController.dispose();
+    _priceController.dispose();
+    _salePriceController.dispose();
+    _shortDescriptionController.dispose();
+    _imageUrlController.dispose();
+    _quantityController.dispose();
+
+    if (_localPreviewUrl != null) {
+      html.Url.revokeObjectUrl(_localPreviewUrl!);
+    }
+
+    for (final variant in _variants) {
+      variant.dispose();
+    }
+
+    super.dispose();
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    final input = html.FileUploadInputElement()
+      ..accept = 'image/jpeg,image/png,image/webp'
+      ..multiple = false;
+
+    input.click();
+
+    await input.onChange.first;
+
+    if (input.files == null || input.files!.isEmpty) {
+      return;
+    }
+
+    final file = input.files!.first;
+    final previewUrl = html.Url.createObjectUrl(file);
+
+    if (_localPreviewUrl != null) {
+      html.Url.revokeObjectUrl(_localPreviewUrl!);
+    }
+
+    setState(() {
+      _localPreviewUrl = previewUrl;
+      _selectedImageName = file.name;
+    });
+
+    final reader = html.FileReader();
+
+    reader.readAsArrayBuffer(file);
+    await reader.onLoad.first;
+
+    final result = reader.result;
+    late final List<int> bytes;
+
+    if (result is ByteBuffer) {
+      bytes = result.asUint8List();
+    } else if (result is Uint8List) {
+      bytes = result;
+    } else if (result is List<int>) {
+      bytes = result;
+    } else {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر قراءة الصورة')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isUploadingImage = true;
+      _selectedImageName = file.name;
+    });
+
+    try {
+      final url = await widget.api.uploadProductImage(
+        bytes: bytes,
+        fileName: file.name,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _imageUrlController.text = url;
+        _isUploadingImage = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم رفع صورة المنتج بنجاح')),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isUploadingImage = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تعذر رفع الصورة: $error')),
+      );
+    }
+  }
+
+  void _addVariant() {
+    setState(() {
+      final variant = _VariantDraft();
+      variant.price.text = _priceController.text.trim();
+      variant.salePrice.text = _salePriceController.text.trim();
+      _variants.add(variant);
+    });
+  }
+
+  void _removeVariant(int index) {
+    setState(() {
+      final removed = _variants.removeAt(index);
+      removed.dispose();
+    });
+  }
+
+  Future<void> _save() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    if (_hasVariants && _variants.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('أضف خيار واحد على الأقل للمنتج')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      final request = CreateProductRequest(
+        categoryId: _categoryId,
+        name: _nameController.text.trim(),
+        sku: _cleanText(_skuController.text),
+        price: double.parse(_priceController.text.trim()),
+        salePrice: _parseOptionalDouble(_salePriceController.text),
+        shortDescription: _cleanText(_shortDescriptionController.text),
+        mainImageUrl: _cleanText(_imageUrlController.text),
+        quantity: int.parse(_quantityController.text.trim()),
+        isFeatured: _isFeatured,
+        hasVariants: _hasVariants,
+        variants: _variants.map((variant) {
+          return CreateProductVariantInput(
+            name: variant.name.text.trim(),
+            sku: _cleanText(variant.sku.text),
+            price: _parseOptionalDouble(variant.price.text),
+            salePrice: _parseOptionalDouble(variant.salePrice.text),
+            quantity: int.parse(variant.quantity.text.trim()),
+          );
+        }).toList(),
+      );
+
+      await widget.api.createProduct(request);
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.of(context).pop(true);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تعذر إضافة المنتج: $error')),
+      );
+
+      setState(() {
+        _isSaving = false;
+      });
+    }
+  }
+
+  String? _cleanText(String value) {
+    final clean = value.trim();
+    return clean.isEmpty ? null : clean;
+  }
+
+  double? _parseOptionalDouble(String value) {
+    final clean = value.trim();
+
+    if (clean.isEmpty) {
+      return null;
+    }
+
+    return double.parse(clean);
+  }
+
+  String? _requiredText(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'هذا الحقل مطلوب';
+    }
+
+    return null;
+  }
+
+  String? _requiredNumber(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'هذا الحقل مطلوب';
+    }
+
+    final parsed = double.tryParse(value.trim());
+
+    if (parsed == null || parsed < 0) {
+      return 'أدخل رقم صحيح';
+    }
+
+    return null;
+  }
+
+  String? _optionalNumber(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return null;
+    }
+
+    final parsed = double.tryParse(value.trim());
+
+    if (parsed == null || parsed < 0) {
+      return 'أدخل رقم صحيح';
+    }
+
+    return null;
+  }
+
+  String? _requiredInteger(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'هذا الحقل مطلوب';
+    }
+
+    final parsed = int.tryParse(value.trim());
+
+    if (parsed == null || parsed < 0) {
+      return 'أدخل كمية صحيحة';
+    }
+
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: AlertDialog(
+        backgroundColor: const Color(0xFFF8FAFC),
+        surfaceTintColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(18),
+        titlePadding: const EdgeInsets.fromLTRB(24, 22, 24, 0),
+        contentPadding: const EdgeInsets.fromLTRB(24, 18, 24, 10),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+        title: const Text(
+          'إضافة منتج جديد',
+          style: TextStyle(
+            color: Color(0xFF0F172A),
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        content: SizedBox(
+          width: 840,
+          child: SingleChildScrollView(
+            child: Form(
+              key: _formKey,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isNarrow = constraints.maxWidth < 650;
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _DialogSection(
+                        title: 'معلومات المنتج',
+                        child: _ResponsiveFields(
+                          isNarrow: isNarrow,
+                          children: [
+                            TextFormField(
+                              controller: _nameController,
+                              validator: _requiredText,
+                              textInputAction: TextInputAction.next,
+                              decoration: const InputDecoration(
+                                labelText: 'اسم المنتج',
+                                prefixIcon: Icon(Icons.inventory_2_outlined),
+                              ),
+                            ),
+                            FutureBuilder<List<AdminCategory>>(
+                              future: _categoriesFuture,
+                              builder: (context, snapshot) {
+                                final categories = snapshot.data ?? <AdminCategory>[];
+
+                                return DropdownButtonFormField<int?>(
+                                  value: _categoryId,
+                                  items: [
+                                    const DropdownMenuItem<int?>(
+                                      value: null,
+                                      child: Text('بدون قسم'),
+                                    ),
+                                    ...categories.map(
+                                      (category) => DropdownMenuItem<int?>(
+                                        value: category.id,
+                                        child: Text(category.name),
+                                      ),
+                                    ),
+                                  ],
+                                  onChanged: _isSaving
+                                      ? null
+                                      : (value) {
+                                          setState(() {
+                                            _categoryId = value;
+                                          });
+                                        },
+                                  decoration: const InputDecoration(
+                                    labelText: 'القسم',
+                                    prefixIcon: Icon(Icons.category_outlined),
+                                  ),
+                                );
+                              },
+                            ),
+                            TextFormField(
+                              controller: _skuController,
+                              textInputAction: TextInputAction.next,
+                              decoration: const InputDecoration(
+                                labelText: 'SKU / كود المنتج',
+                                prefixIcon: Icon(Icons.qr_code_2),
+                              ),
+                            ),
+                            TextFormField(
+                              controller: _shortDescriptionController,
+                              textInputAction: TextInputAction.next,
+                              maxLines: 2,
+                              decoration: const InputDecoration(
+                                labelText: 'وصف مختصر',
+                                prefixIcon: Icon(Icons.short_text),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _DialogSection(
+                        title: 'السعر والمخزون',
+                        child: _ResponsiveFields(
+                          isNarrow: isNarrow,
+                          children: [
+                            TextFormField(
+                              controller: _priceController,
+                              validator: _requiredNumber,
+                              keyboardType: TextInputType.number,
+                              textInputAction: TextInputAction.next,
+                              decoration: const InputDecoration(
+                                labelText: 'السعر الأساسي',
+                                prefixIcon: Icon(Icons.payments_outlined),
+                                suffixText: 'د.ع',
+                              ),
+                            ),
+                            TextFormField(
+                              controller: _salePriceController,
+                              validator: _optionalNumber,
+                              keyboardType: TextInputType.number,
+                              textInputAction: TextInputAction.next,
+                              decoration: const InputDecoration(
+                                labelText: 'سعر التخفيض',
+                                prefixIcon: Icon(Icons.local_offer_outlined),
+                                suffixText: 'د.ع',
+                              ),
+                            ),
+                            if (!_hasVariants)
+                              TextFormField(
+                                controller: _quantityController,
+                                validator: _requiredInteger,
+                                keyboardType: TextInputType.number,
+                                textInputAction: TextInputAction.next,
+                                decoration: const InputDecoration(
+                                  labelText: 'الكمية بالمخزن الرئيسي',
+                                  prefixIcon: Icon(Icons.warehouse_outlined),
+                                ),
+                              ),
+                            SwitchListTile(
+                              value: _isFeatured,
+                              onChanged: _isSaving
+                                  ? null
+                                  : (value) {
+                                      setState(() {
+                                        _isFeatured = value;
+                                      });
+                                    },
+                              title: const Text(
+                                'منتج مميز',
+                                style: TextStyle(fontWeight: FontWeight.w800),
+                              ),
+                              subtitle: const Text('يظهر بأولوية في واجهة الزبون'),
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _DialogSection(
+                        title: 'خيارات المنتج',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            SwitchListTile(
+                              value: _hasVariants,
+                              onChanged: _isSaving
+                                  ? null
+                                  : (value) {
+                                      setState(() {
+                                        _hasVariants = value;
+                                        if (_hasVariants && _variants.isEmpty) {
+                                          _variants.add(_VariantDraft());
+                                        }
+                                      });
+                                    },
+                              title: const Text(
+                                'هذا المنتج يحتوي خيارات',
+                                style: TextStyle(fontWeight: FontWeight.w900),
+                              ),
+                              subtitle: const Text('مثل 42 / 43 أو M / L أو Black / 128GB'),
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                            if (_hasVariants) ...[
+                              const SizedBox(height: 10),
+                              for (int index = 0; index < _variants.length; index++) ...[
+                                _VariantEditor(
+                                  index: index,
+                                  variant: _variants[index],
+                                  onRemove: _variants.length == 1 ? null : () => _removeVariant(index),
+                                  requiredText: _requiredText,
+                                  optionalNumber: _optionalNumber,
+                                  requiredInteger: _requiredInteger,
+                                ),
+                                const SizedBox(height: 10),
+                              ],
+                              Align(
+                                alignment: AlignmentDirectional.centerStart,
+                                child: OutlinedButton.icon(
+                                  onPressed: _isSaving ? null : _addVariant,
+                                  icon: const Icon(Icons.add),
+                                  label: const Text('إضافة خيار'),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _DialogSection(
+                        title: 'صورة المنتج',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (_localPreviewUrl != null || _imageUrlController.text.trim().isNotEmpty) ...[
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(18),
+                                child: Container(
+                                  height: 180,
+                                  color: const Color(0xFFF1F5F9),
+                                  child: Image.network(
+                                    _localPreviewUrl ?? _imageUrlController.text.trim(),
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (_, __, ___) {
+                                      return const Center(
+                                        child: Text('تعذر عرض الصورة'),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                            OutlinedButton.icon(
+                              onPressed: _isSaving || _isUploadingImage ? null : _pickAndUploadImage,
+                              icon: _isUploadingImage
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : const Icon(Icons.upload_file_outlined),
+                              label: Text(
+                                _isUploadingImage
+                                    ? 'جاري رفع الصورة...'
+                                    : (_selectedImageName == null ? 'اختيار صورة من الجهاز' : 'تغيير الصورة'),
+                              ),
+                            ),
+                            if (_selectedImageName != null) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                _selectedImageName!,
+                                style: const TextStyle(
+                                  color: Color(0xFF64748B),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _imageUrlController,
+                              readOnly: true,
+                              decoration: const InputDecoration(
+                                labelText: 'رابط الصورة بعد الرفع',
+                                prefixIcon: Icon(Icons.link),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: _isSaving ? null : () => Navigator.of(context).pop(false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton.icon(
+            onPressed: _isSaving ? null : _save,
+            icon: _isSaving
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.save_outlined),
+            label: Text(_isSaving ? 'جاري الحفظ...' : 'حفظ المنتج'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VariantEditor extends StatelessWidget {
+  const _VariantEditor({
+    required this.index,
+    required this.variant,
+    required this.onRemove,
+    required this.requiredText,
+    required this.optionalNumber,
+    required this.requiredInteger,
+  });
+
+  final int index;
+  final _VariantDraft variant;
+  final VoidCallback? onRemove;
+  final String? Function(String?) requiredText;
+  final String? Function(String?) optionalNumber;
+  final String? Function(String?) requiredInteger;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Text(
+                'الخيار ${index + 1}',
+                style: const TextStyle(
+                  color: Color(0xFF0F172A),
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const Spacer(),
+              if (onRemove != null)
+                IconButton(
+                  onPressed: onRemove,
+                  icon: const Icon(Icons.delete_outline),
+                  color: const Color(0xFFDC2626),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              SizedBox(
+                width: 220,
+                child: TextFormField(
+                  controller: variant.name,
+                  validator: requiredText,
+                  decoration: const InputDecoration(
+                    labelText: 'اسم الخيار',
+                    hintText: '42 أو M أو Black',
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 190,
+                child: TextFormField(
+                  controller: variant.sku,
+                  decoration: const InputDecoration(labelText: 'SKU'),
+                ),
+              ),
+              SizedBox(
+                width: 160,
+                child: TextFormField(
+                  controller: variant.price,
+                  validator: optionalNumber,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'السعر',
+                    suffixText: 'د.ع',
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 160,
+                child: TextFormField(
+                  controller: variant.salePrice,
+                  validator: optionalNumber,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'سعر التخفيض',
+                    suffixText: 'د.ع',
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 150,
+                child: TextFormField(
+                  controller: variant.quantity,
+                  validator: requiredInteger,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'الكمية'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DialogSection extends StatelessWidget {
+  const _DialogSection({
+    required this.title,
+    required this.child,
+  });
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: Color(0xFF0F172A),
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 14),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _ResponsiveFields extends StatelessWidget {
+  const _ResponsiveFields({
+    required this.isNarrow,
+    required this.children,
+  });
+
+  final bool isNarrow;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isNarrow) {
+      return Column(
+        children: [
+          for (final child in children) ...[
+            child,
+            if (child != children.last) const SizedBox(height: 12),
+          ],
+        ],
+      );
+    }
+
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: children
+          .map(
+            (child) => SizedBox(
+              width: 360,
+              child: child,
+            ),
+          )
+          .toList(),
+    );
+  }
+}
+
 class ErrorPanel extends StatelessWidget {
   const ErrorPanel({
     super.key,
@@ -1121,3 +2137,14 @@ BoxDecoration cardDecoration() {
     ],
   );
 }
+
+
+
+
+
+
+
+
+
+
+
