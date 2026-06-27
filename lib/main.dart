@@ -73,6 +73,11 @@ class CurrentAdminSession {
   static bool get canViewAccounts => isSuperAdmin || isTenantAdmin;
   static bool get canViewBranding => isSuperAdmin || isTenantAdmin;
   static bool get canViewCommercial => isSuperAdmin;
+  static bool get canManageProducts => isSuperAdmin || isTenantAdmin || isManager || isInventoryStaff;
+  static bool get canManageOrders => isSuperAdmin || isTenantAdmin || isManager || isOrdersStaff;
+  static bool get canManageAccounts => isSuperAdmin || isTenantAdmin;
+  static bool get canManageBranding => isSuperAdmin || isTenantAdmin;
+  static bool get canManageCommercial => isSuperAdmin;
 
   static Widget defaultHomePage() {
     if (canViewProducts) {
@@ -1481,11 +1486,13 @@ class _ProductsDashboardPageState extends State<ProductsDashboardPage> {
                 ],
               ),
               drawer: const Drawer(child: AdminSidebar(isDrawer: true)),
-              floatingActionButton: FloatingActionButton.extended(
-                onPressed: _openAddProductDialog,
-                icon: const Icon(Icons.add),
-                label: const Text('إضافة'),
-              ),
+              floatingActionButton: CurrentAdminSession.canManageProducts
+                  ? FloatingActionButton.extended(
+                      onPressed: _openAddProductDialog,
+                      icon: const Icon(Icons.add),
+                      label: const Text('إضافة'),
+                    )
+                  : null,
               body: DashboardBody(
                 future: _future,
                 searchController: _searchController,
@@ -1757,17 +1764,19 @@ class DashboardHeader extends StatelessWidget {
                   icon: const Icon(Icons.refresh),
                   label: const Text('تحديث'),
                 ),
-                const SizedBox(width: 12),
-                FilledButton.icon(
-                  onPressed: onAdd,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFF0F172A),
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                if (CurrentAdminSession.canManageProducts) ...[
+                  const SizedBox(width: 12),
+                  FilledButton.icon(
+                    onPressed: onAdd,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFF0F172A),
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                    ),
+                    icon: const Icon(Icons.add),
+                    label: const Text('إضافة منتج'),
                   ),
-                  icon: const Icon(Icons.add),
-                  label: const Text('إضافة منتج'),
-                ),
+                ],
               ],
             ),
     );
@@ -1972,12 +1981,14 @@ class DesktopProductRow extends StatelessWidget {
             ),
           ),
           StatusChip(status: product.status),
-          const SizedBox(width: 12),
-          OutlinedButton.icon(
-            onPressed: onEdit,
-            icon: const Icon(Icons.edit_outlined, size: 18),
-            label: const Text('تعديل'),
-          ),
+          if (CurrentAdminSession.canManageProducts) ...[
+            const SizedBox(width: 12),
+            OutlinedButton.icon(
+              onPressed: onEdit,
+              icon: const Icon(Icons.edit_outlined, size: 18),
+              label: const Text('تعديل'),
+            ),
+          ],
         ],
       ),
     );
@@ -2034,11 +2045,12 @@ class MobileProductCard extends StatelessWidget {
             children: [
               StatusChip(status: product.status),
               const Spacer(),
-              OutlinedButton.icon(
-                onPressed: onEdit,
-                icon: const Icon(Icons.edit_outlined, size: 18),
-                label: const Text('تعديل'),
-              ),
+              if (CurrentAdminSession.canManageProducts)
+                OutlinedButton.icon(
+                  onPressed: onEdit,
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  label: const Text('تعديل'),
+                ),
             ],
           ),
         ],
