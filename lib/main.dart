@@ -579,6 +579,55 @@ class AdminApi {
         .toList();
   }
 
+  Future<AdminTenant> createTenant({
+    required String name,
+    required String code,
+    required String businessType,
+    String? ownerName,
+    String? phone,
+    String? email,
+    String status = "active",
+    String? appName,
+  }) async {
+    final uri = Uri.parse("$baseUrl/admin/tenants");
+
+    final body = <String, dynamic>{
+      "name": name,
+      "code": code,
+      "business_type": businessType,
+      "status": status,
+    };
+
+    if (ownerName != null && ownerName.trim().isNotEmpty) {
+      body["owner_name"] = ownerName.trim();
+    }
+
+    if (phone != null && phone.trim().isNotEmpty) {
+      body["phone"] = phone.trim();
+    }
+
+    if (email != null && email.trim().isNotEmpty) {
+      body["email"] = email.trim();
+    }
+
+    if (appName != null && appName.trim().isNotEmpty) {
+      body["app_name"] = appName.trim();
+    }
+
+    final response = await http.post(
+      uri,
+      headers: _jsonHeaders,
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception("Create Tenant API Error ${response.statusCode}: ${response.body}");
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    return AdminTenant.fromJson(json["data"] as Map<String, dynamic>);
+  }
+
   Future<List<AdminAccount>> fetchAccounts() async {
     final uri = Uri.parse('$baseUrl/admin/accounts');
 
@@ -2468,6 +2517,93 @@ class _AdminSidebarState extends State<AdminSidebar> {
   }
 
 
+  Future<void> _openCreateTenantDialog(BuildContext context) async {
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController();
+    final codeController = TextEditingController();
+    final ownerNameController = TextEditingController();
+    final phoneController = TextEditingController();
+    final emailController = TextEditingController();
+    final appNameController = TextEditingController();
+    var businessType = "general";
+    var status = "active";
+    var saving = false;
+
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) {
+          return StatefulBuilder(
+            builder: (context, setDialogState) {
+              return AlertDialog(
+                title: const Text("إضافة متجر جديد"),
+                content: SizedBox(
+                  width: 460,
+                  child: Form(
+                    key: formKey,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextFormField(controller: nameController, decoration: const InputDecoration(labelText: "اسم المتجر"), validator: (value) => value == null || value.trim().isEmpty ? "مطلوب" : null),
+                          const SizedBox(height: 12),
+                          TextFormField(controller: codeController, decoration: const InputDecoration(labelText: "كود المتجر مثل: client-store"), validator: (value) { final text = value?.trim() ?? ""; if (text.isEmpty) return "مطلوب"; if (!RegExp(r"^[A-Za-z0-9_-]+$").hasMatch(text)) return "استخدم حروف إنكليزية وأرقام و - أو _ فقط"; return null; }),
+                          const SizedBox(height: 12),
+                          TextFormField(controller: appNameController, decoration: const InputDecoration(labelText: "اسم التطبيق"), validator: (value) => null),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<String>(value: businessType, decoration: const InputDecoration(labelText: "نوع النشاط"), items: const [DropdownMenuItem(value: "general", child: Text("عام")), DropdownMenuItem(value: "fashion", child: Text("ملابس")), DropdownMenuItem(value: "electronics", child: Text("أجهزة")), DropdownMenuItem(value: "pharmacy", child: Text("صيدلية")), DropdownMenuItem(value: "beauty", child: Text("عطور وتجميل")), DropdownMenuItem(value: "petshop", child: Text("Petshop")), DropdownMenuItem(value: "grocery", child: Text("مواد غذائية")), DropdownMenuItem(value: "home", child: Text("أدوات منزلية"))], onChanged: saving ? null : (value) => setDialogState(() => businessType = value ?? "general")),
+                          const SizedBox(height: 12),
+                          TextFormField(controller: ownerNameController, decoration: const InputDecoration(labelText: "اسم المالك اختياري")),
+                          const SizedBox(height: 12),
+                          TextFormField(controller: phoneController, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: "رقم الهاتف اختياري")),
+                          const SizedBox(height: 12),
+                          TextFormField(controller: emailController, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: "الإيميل اختياري")),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<String>(value: status, decoration: const InputDecoration(labelText: "الحالة"), items: const [DropdownMenuItem(value: "active", child: Text("فعال")), DropdownMenuItem(value: "inactive", child: Text("غير فعال"))], onChanged: saving ? null : (value) => setDialogState(() => status = value ?? "active")),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                actions: [
+                  TextButton(onPressed: saving ? null : () => Navigator.of(dialogContext).pop(), child: const Text("إلغاء")),
+                  FilledButton.icon(
+                    onPressed: saving ? null : () async {
+                      if (!(formKey.currentState?.validate() ?? false)) return;
+                      final navigator = Navigator.of(dialogContext);
+                      final messenger = ScaffoldMessenger.of(context);
+                      setDialogState(() => saving = true);
+                      try {
+                        final tenant = await _api.createTenant(name: nameController.text.trim(), code: codeController.text.trim(), businessType: businessType, ownerName: ownerNameController.text.trim(), phone: phoneController.text.trim(), email: emailController.text.trim(), status: status, appName: appNameController.text.trim());
+                        if (!mounted) return;
+                        TenantSelectionSession.save(tenant);
+                        navigator.pop();
+                        messenger.showSnackBar(const SnackBar(content: Text("تم إنشاء المتجر بنجاح")));
+                        html.window.location.reload();
+                      } catch (error) {
+                        setDialogState(() => saving = false);
+                        messenger.showSnackBar(SnackBar(content: Text(error.toString())));
+                      }
+                    },
+                    icon: saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.add_business_outlined),
+                    label: Text(saving ? "جاري الحفظ" : "إنشاء"),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      nameController.dispose();
+      codeController.dispose();
+      ownerNameController.dispose();
+      phoneController.dispose();
+      emailController.dispose();
+      appNameController.dispose();
+    }
+  }
+
   Future<void> _logout(BuildContext context) async {
     if (widget.isDrawer) {
       Navigator.of(context).pop();
@@ -2531,6 +2667,13 @@ class _AdminSidebarState extends State<AdminSidebar> {
                 widget.selectedSection == 'accounts',
                 onTap: () => _openAccounts(context),
               ),
+              if (CurrentAdminSession.isSuperAdmin)
+              SidebarItem(
+                Icons.add_business_outlined,
+                "إضافة متجر",
+                false,
+                onTap: () => _openCreateTenantDialog(context),
+              ),
               if (CurrentAdminSession.canViewProducts) const SidebarItem(Icons.category_outlined, 'الأقسام', false),
               if (CurrentAdminSession.canViewProducts) const SidebarItem(Icons.storefront_outlined, 'المخازن والفروع', false),
               if (CurrentAdminSession.canViewProducts || CurrentAdminSession.canViewOrders) const SidebarItem(Icons.local_offer_outlined, 'الخصومات', false),
@@ -2584,6 +2727,7 @@ class _AdminSidebarState extends State<AdminSidebar> {
                         const SizedBox(height: 8),
                         if (CurrentAdminSession.isSuperAdmin && tenants.isNotEmpty)
                           DropdownButtonFormField<String>(
+                            isExpanded: true,
                             value: selectedTenant?.code ?? tenants.first.code,
                             dropdownColor: const Color(0xFF0F172A),
                             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
@@ -2591,7 +2735,7 @@ class _AdminSidebarState extends State<AdminSidebar> {
                               isDense: true,
                               border: OutlineInputBorder(),
                             ),
-                            items: tenants.map((tenant) => DropdownMenuItem<String>(value: tenant.code, child: Text(tenant.label))).toList(),
+                            items: tenants.map((tenant) => DropdownMenuItem<String>(value: tenant.code, child: Text(tenant.label, maxLines: 1, overflow: TextOverflow.ellipsis))).toList(),
                             onChanged: (value) {
                               if (value == null) return;
                               final tenant = tenants.firstWhere((item) => item.code == value);
@@ -2602,6 +2746,8 @@ class _AdminSidebarState extends State<AdminSidebar> {
                         else
                           Text(
                             selectedTenant?.label ?? TenantSelectionSession.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w900,
