@@ -483,6 +483,42 @@ class AdminApi {
         .toList();
   }
 
+  Future<void> createAccount({
+    required String name,
+    String? email,
+    required String phone,
+    required String password,
+    required String role,
+    int? tenantId,
+  }) async {
+    final uri = Uri.parse('$baseUrl/admin/accounts');
+
+    final body = <String, dynamic>{
+      'name': name,
+      'phone': phone,
+      'password': password,
+      'role': role,
+    };
+
+    if (email != null && email.trim().isNotEmpty) {
+      body['email'] = email.trim();
+    }
+
+    if (tenantId != null) {
+      body['tenant_id'] = tenantId;
+    }
+
+    final response = await http.post(
+      uri,
+      headers: _jsonHeaders,
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception('Create Account API Error ${response.statusCode}: ${response.body}');
+    }
+  }
+
   Future<void> createProduct(CreateProductRequest request) async {
     final uri = Uri.parse('$baseUrl/admin/products?tenant=$tenantCode');
 
@@ -2388,6 +2424,94 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
     await _future;
   }
 
+  Future<void> _openCreateAccountDialog() async {
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController();
+    final phoneController = TextEditingController();
+    final passwordController = TextEditingController();
+    var role = 'manager';
+    var saving = false;
+
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) {
+          return StatefulBuilder(
+            builder: (context, setDialogState) {
+              return AlertDialog(
+                title: const Text('إضافة حساب'),
+                content: SizedBox(
+                  width: 420,
+                  child: Form(
+                    key: formKey,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextFormField(controller: nameController, decoration: const InputDecoration(labelText: 'الاسم'), validator: (value) => value == null || value.trim().isEmpty ? 'مطلوب' : null),
+                          const SizedBox(height: 12),
+                          TextFormField(controller: phoneController, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'رقم الهاتف'), validator: (value) => value == null || value.trim().isEmpty ? 'مطلوب' : null),
+                          const SizedBox(height: 12),
+                          TextFormField(controller: passwordController, obscureText: true, decoration: const InputDecoration(labelText: 'كلمة المرور'), validator: (value) => value == null || value.trim().length < 8 ? '8 أحرف على الأقل' : null),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<String>(
+                            value: role,
+                            decoration: const InputDecoration(labelText: 'الدور'),
+                            items: const [
+                              DropdownMenuItem(value: 'tenant_admin', child: Text('مدير متجر')),
+                              DropdownMenuItem(value: 'manager', child: Text('مدير')),
+                              DropdownMenuItem(value: 'orders_staff', child: Text('موظف طلبات')),
+                              DropdownMenuItem(value: 'inventory_staff', child: Text('موظف مخزون')),
+                            ],
+                            onChanged: saving ? null : (value) => setDialogState(() => role = value ?? 'manager'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                actions: [
+                  TextButton(onPressed: saving ? null : () => Navigator.of(dialogContext).pop(), child: const Text('إلغاء')),
+                  FilledButton.icon(
+                    onPressed: saving ? null : () async {
+                      if (!(formKey.currentState?.validate() ?? false)) {
+                        return;
+                      }
+
+                      final navigator = Navigator.of(dialogContext);
+                      final messenger = ScaffoldMessenger.of(context);
+
+                      setDialogState(() => saving = true);
+
+                      try {
+                        await _api.createAccount(name: nameController.text.trim(), phone: phoneController.text.trim(), password: passwordController.text, role: role, tenantId: 1);
+                        if (!mounted) {
+                          return;
+                        }
+                        navigator.pop();
+                        messenger.showSnackBar(const SnackBar(content: Text('تم إنشاء الحساب بنجاح')));
+                        await _reload();
+                      } catch (error) {
+                        setDialogState(() => saving = false);
+                        messenger.showSnackBar(SnackBar(content: Text(error.toString())));
+                      }
+                    },
+                    icon: saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.add),
+                    label: Text(saving ? 'جاري الحفظ' : 'حفظ'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      nameController.dispose();
+      phoneController.dispose();
+      passwordController.dispose();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Directionality(
@@ -2406,6 +2530,7 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
                     actions: [IconButton(onPressed: _reload, icon: const Icon(Icons.refresh))],
                   )
                 : null,
+            floatingActionButton: FloatingActionButton.extended(onPressed: _openCreateAccountDialog, icon: const Icon(Icons.add), label: const Text('إضافة حساب')),
             body: Row(
               children: [
                 if (!isMobile) const AdminSidebar(selectedSection: 'accounts'),
