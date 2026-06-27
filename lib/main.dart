@@ -535,6 +535,45 @@ class AdminApi {
     }
   }
 
+  Future<void> updateAccount({
+    required int accountId,
+    required String name,
+    required String phone,
+    required String role,
+  }) async {
+    final uri = Uri.parse('$baseUrl/admin/accounts/$accountId');
+
+    final response = await http.patch(
+      uri,
+      headers: _jsonHeaders,
+      body: jsonEncode({
+        'name': name,
+        'phone': phone,
+        'role': role,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Update Account API Error ${response.statusCode}: ${response.body}');
+    }
+  }
+
+  Future<void> updateAccountPassword(int accountId, String password) async {
+    final uri = Uri.parse('$baseUrl/admin/accounts/$accountId/password');
+
+    final response = await http.patch(
+      uri,
+      headers: _jsonHeaders,
+      body: jsonEncode({
+        'password': password,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Update Account Password API Error ${response.statusCode}: ${response.body}');
+    }
+  }
+
   Future<void> createProduct(CreateProductRequest request) async {
     final uri = Uri.parse('$baseUrl/admin/products?tenant=$tenantCode');
 
@@ -2439,6 +2478,133 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
     }
   }
 
+  Future<void> _openEditAccountDialog(AdminAccount account) async {
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController(text: account.name);
+    final phoneController = TextEditingController(text: account.phone);
+    var role = account.role == 'super_admin' ? 'manager' : account.role;
+    var saving = false;
+
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) {
+          return StatefulBuilder(
+            builder: (context, setDialogState) {
+              return AlertDialog(
+                title: const Text('تعديل الحساب'),
+                content: SizedBox(
+                  width: 420,
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextFormField(controller: nameController, decoration: const InputDecoration(labelText: 'الاسم'), validator: (value) => value == null || value.trim().isEmpty ? 'مطلوب' : null),
+                        const SizedBox(height: 12),
+                        TextFormField(controller: phoneController, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'رقم الهاتف'), validator: (value) => value == null || value.trim().isEmpty ? 'مطلوب' : null),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<String>(
+                          value: role,
+                          decoration: const InputDecoration(labelText: 'الدور'),
+                          items: const [
+                            DropdownMenuItem(value: 'tenant_admin', child: Text('مدير متجر')),
+                            DropdownMenuItem(value: 'manager', child: Text('مدير')),
+                            DropdownMenuItem(value: 'orders_staff', child: Text('موظف طلبات')),
+                            DropdownMenuItem(value: 'inventory_staff', child: Text('موظف مخزون')),
+                          ],
+                          onChanged: saving ? null : (value) => setDialogState(() => role = value ?? 'manager'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                actions: [
+                  TextButton(onPressed: saving ? null : () => Navigator.of(dialogContext).pop(), child: const Text('إلغاء')),
+                  FilledButton.icon(
+                    onPressed: saving ? null : () async {
+                      if (!(formKey.currentState?.validate() ?? false)) return;
+                      final navigator = Navigator.of(dialogContext);
+                      final messenger = ScaffoldMessenger.of(context);
+                      setDialogState(() => saving = true);
+                      try {
+                        await _api.updateAccount(accountId: account.id, name: nameController.text.trim(), phone: phoneController.text.trim(), role: role);
+                        if (!mounted) return;
+                        navigator.pop();
+                        messenger.showSnackBar(const SnackBar(content: Text('تم تعديل الحساب بنجاح')));
+                        await _reload();
+                      } catch (error) {
+                        setDialogState(() => saving = false);
+                        messenger.showSnackBar(SnackBar(content: Text(error.toString())));
+                      }
+                    },
+                    icon: saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_outlined),
+                    label: Text(saving ? 'جاري الحفظ' : 'حفظ'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      nameController.dispose();
+      phoneController.dispose();
+    }
+  }
+
+  Future<void> _openChangeAccountPasswordDialog(AdminAccount account) async {
+    final formKey = GlobalKey<FormState>();
+    final passwordController = TextEditingController();
+    var saving = false;
+
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) {
+          return StatefulBuilder(
+            builder: (context, setDialogState) {
+              return AlertDialog(
+                title: Text('تغيير كلمة مرور '),
+                content: SizedBox(
+                  width: 420,
+                  child: Form(
+                    key: formKey,
+                    child: TextFormField(controller: passwordController, obscureText: true, decoration: const InputDecoration(labelText: 'كلمة المرور الجديدة'), validator: (value) => value == null || value.trim().length < 8 ? '8 أحرف على الأقل' : null),
+                  ),
+                ),
+                actions: [
+                  TextButton(onPressed: saving ? null : () => Navigator.of(dialogContext).pop(), child: const Text('إلغاء')),
+                  FilledButton.icon(
+                    onPressed: saving ? null : () async {
+                      if (!(formKey.currentState?.validate() ?? false)) return;
+                      final navigator = Navigator.of(dialogContext);
+                      final messenger = ScaffoldMessenger.of(context);
+                      setDialogState(() => saving = true);
+                      try {
+                        await _api.updateAccountPassword(account.id, passwordController.text);
+                        if (!mounted) return;
+                        navigator.pop();
+                        messenger.showSnackBar(const SnackBar(content: Text('تم تغيير كلمة المرور')));
+                      } catch (error) {
+                        setDialogState(() => saving = false);
+                        messenger.showSnackBar(SnackBar(content: Text(error.toString())));
+                      }
+                    },
+                    icon: saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.lock_reset_outlined),
+                    label: Text(saving ? 'جاري الحفظ' : 'حفظ'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      passwordController.dispose();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -2618,7 +2784,7 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
                                   child: const Text('لا توجد حسابات إدارية بعد.', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w800)),
                                 )
                               else
-                                ...accounts.map((account) => Padding(padding: const EdgeInsets.only(bottom: 12), child: AccountCard(account: account, isMobile: isMobile, onToggleStatus: () => _toggleAccountStatus(account)))),
+                                ...accounts.map((account) => Padding(padding: const EdgeInsets.only(bottom: 12), child: AccountCard(account: account, isMobile: isMobile, onToggleStatus: () => _toggleAccountStatus(account), onEdit: () => _openEditAccountDialog(account), onChangePassword: () => _openChangeAccountPasswordDialog(account)))),
                               const SizedBox(height: 36),
                             ],
                           );
@@ -2700,11 +2866,13 @@ class _AccountStatCard extends StatelessWidget {
 }
 
 class AccountCard extends StatelessWidget {
-  const AccountCard({super.key, required this.account, required this.isMobile, required this.onToggleStatus});
+  const AccountCard({super.key, required this.account, required this.isMobile, required this.onToggleStatus, required this.onEdit, required this.onChangePassword});
 
   final AdminAccount account;
   final bool isMobile;
   final VoidCallback onToggleStatus;
+  final VoidCallback onEdit;
+  final VoidCallback onChangePassword;
 
   @override
   Widget build(BuildContext context) {
@@ -2731,7 +2899,7 @@ class AccountCard extends StatelessWidget {
             const SizedBox(height: 10),
             Row(children: [Expanded(child: InfoBlock(title: 'الدور', value: account.roleLabel)), const SizedBox(width: 10), Expanded(child: InfoBlock(title: 'الحالة', value: account.statusLabel))]),
             const SizedBox(height: 12),
-            OutlinedButton.icon(onPressed: onToggleStatus, icon: Icon(account.isActive ? Icons.block_outlined : Icons.check_circle_outline), label: Text(account.isActive ? 'تعطيل' : 'تفعيل')),
+            Wrap(spacing: 8, runSpacing: 8, children: [OutlinedButton.icon(onPressed: onEdit, icon: const Icon(Icons.edit_outlined), label: const Text('تعديل')), OutlinedButton.icon(onPressed: onChangePassword, icon: const Icon(Icons.lock_reset_outlined), label: const Text('كلمة المرور')), OutlinedButton.icon(onPressed: onToggleStatus, icon: Icon(account.isActive ? Icons.block_outlined : Icons.check_circle_outline), label: Text(account.isActive ? 'تعطيل' : 'تفعيل'))]),
           ],
         ),
       );
@@ -2750,7 +2918,7 @@ class AccountCard extends StatelessWidget {
           Expanded(child: InfoBlock(title: 'الدور', value: account.roleLabel)),
           Expanded(child: InfoBlock(title: 'الحالة', value: account.statusLabel)),
           const SizedBox(width: 12),
-          OutlinedButton.icon(onPressed: onToggleStatus, icon: Icon(account.isActive ? Icons.block_outlined : Icons.check_circle_outline), label: Text(account.isActive ? 'تعطيل' : 'تفعيل')),
+          Wrap(spacing: 8, runSpacing: 8, children: [OutlinedButton.icon(onPressed: onEdit, icon: const Icon(Icons.edit_outlined), label: const Text('تعديل')), OutlinedButton.icon(onPressed: onChangePassword, icon: const Icon(Icons.lock_reset_outlined), label: const Text('كلمة المرور')), OutlinedButton.icon(onPressed: onToggleStatus, icon: Icon(account.isActive ? Icons.block_outlined : Icons.check_circle_outline), label: Text(account.isActive ? 'تعطيل' : 'تفعيل'))]),
         ],
       ),
     );
