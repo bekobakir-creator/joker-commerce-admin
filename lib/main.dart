@@ -52,6 +52,7 @@ class AuthSession {
   static void clear() {
     html.window.localStorage.remove(_tokenKey);
     CurrentAdminSession.clear();
+    TenantSelectionSession.clear();
   }
 }
 
@@ -109,6 +110,39 @@ class CurrentAdminSession {
 
   static void clear() {
     _user = null;
+  }
+}
+
+class TenantSelectionSession {
+  static const String _codeKey = 'joker_admin_selected_tenant_code';
+  static const String _nameKey = 'joker_admin_selected_tenant_name';
+
+  static String get code {
+    final value = html.window.localStorage[_codeKey];
+    if (value == null || value.trim().isEmpty) {
+      return 'demo';
+    }
+
+    return value;
+  }
+
+  static String get name {
+    final value = html.window.localStorage[_nameKey];
+    if (value == null || value.trim().isEmpty) {
+      return 'Demo Store';
+    }
+
+    return value;
+  }
+
+  static void save(AdminTenant tenant) {
+    html.window.localStorage[_codeKey] = tenant.code;
+    html.window.localStorage[_nameKey] = tenant.name;
+  }
+
+  static void clear() {
+    html.window.localStorage.remove(_codeKey);
+    html.window.localStorage.remove(_nameKey);
   }
 }
 
@@ -350,7 +384,7 @@ class AdminApi {
       ? _configuredBaseUrl.trim()
       : 'http://187.127.70.62:8088/api';
 
-  final String tenantCode = 'demo';
+  String get tenantCode => TenantSelectionSession.code;
 
   Map<String, String> get _jsonHeaders {
     final headers = <String, String>{
@@ -2332,7 +2366,7 @@ class MiniTag extends StatelessWidget {
   }
 }
 
-class AdminSidebar extends StatelessWidget {
+class AdminSidebar extends StatefulWidget {
   const AdminSidebar({
     super.key,
     this.isDrawer = false,
@@ -2342,9 +2376,23 @@ class AdminSidebar extends StatelessWidget {
   final bool isDrawer;
   final String selectedSection;
 
+  @override
+  State<AdminSidebar> createState() => _AdminSidebarState();
+}
+
+class _AdminSidebarState extends State<AdminSidebar> {
+  final AdminApi _api = AdminApi();
+  late Future<List<AdminTenant>> _tenantsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _tenantsFuture = _api.fetchTenants();
+  }
+
   void _openProducts(BuildContext context) {
-    if (selectedSection == 'products') {
-      if (isDrawer) {
+    if (widget.selectedSection == 'products') {
+      if (widget.isDrawer) {
         Navigator.of(context).pop();
       }
       return;
@@ -2358,8 +2406,8 @@ class AdminSidebar extends StatelessWidget {
   }
 
   void _openOrders(BuildContext context) {
-    if (selectedSection == 'orders') {
-      if (isDrawer) {
+    if (widget.selectedSection == 'orders') {
+      if (widget.isDrawer) {
         Navigator.of(context).pop();
       }
       return;
@@ -2375,8 +2423,8 @@ class AdminSidebar extends StatelessWidget {
 
 
   void _openAccounts(BuildContext context) {
-    if (selectedSection == 'accounts') {
-      if (isDrawer) {
+    if (widget.selectedSection == 'accounts') {
+      if (widget.isDrawer) {
         Navigator.of(context).pop();
       }
       return;
@@ -2390,8 +2438,8 @@ class AdminSidebar extends StatelessWidget {
   }
 
   void _openCommercialSettings(BuildContext context) {
-    if (selectedSection == 'commercial') {
-      if (isDrawer) {
+    if (widget.selectedSection == 'commercial') {
+      if (widget.isDrawer) {
         Navigator.of(context).pop();
       }
       return;
@@ -2405,8 +2453,8 @@ class AdminSidebar extends StatelessWidget {
   }
 
   void _openBranding(BuildContext context) {
-    if (selectedSection == 'branding') {
-      if (isDrawer) {
+    if (widget.selectedSection == 'branding') {
+      if (widget.isDrawer) {
         Navigator.of(context).pop();
       }
       return;
@@ -2421,7 +2469,7 @@ class AdminSidebar extends StatelessWidget {
 
 
   Future<void> _logout(BuildContext context) async {
-    if (isDrawer) {
+    if (widget.isDrawer) {
       Navigator.of(context).pop();
     }
 
@@ -2437,7 +2485,7 @@ class AdminSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: isDrawer ? double.infinity : 250,
+      width: widget.isDrawer ? double.infinity : 250,
       color: const Color(0xFF0F172A),
       child: SafeArea(
         child: Padding(
@@ -2466,21 +2514,21 @@ class AdminSidebar extends StatelessWidget {
               SidebarItem(
                 Icons.inventory_2_outlined,
                 'المنتجات',
-                selectedSection == 'products',
+                widget.selectedSection == 'products',
                 onTap: () => _openProducts(context),
               ),
               if (CurrentAdminSession.canViewOrders)
               SidebarItem(
                 Icons.receipt_long_outlined,
                 'الطلبات',
-                selectedSection == 'orders',
+                widget.selectedSection == 'orders',
                 onTap: () => _openOrders(context),
               ),
               if (CurrentAdminSession.canViewAccounts)
               SidebarItem(
                 Icons.manage_accounts_outlined,
                 'الحسابات',
-                selectedSection == 'accounts',
+                widget.selectedSection == 'accounts',
                 onTap: () => _openAccounts(context),
               ),
               if (CurrentAdminSession.canViewProducts) const SidebarItem(Icons.category_outlined, 'الأقسام', false),
@@ -2490,14 +2538,14 @@ class AdminSidebar extends StatelessWidget {
               SidebarItem(
                 Icons.workspace_premium_outlined,
                 'الباقات والميزات',
-                selectedSection == 'commercial',
+                widget.selectedSection == 'commercial',
                 onTap: () => _openCommercialSettings(context),
               ),
               if (CurrentAdminSession.canViewBranding)
               SidebarItem(
                 Icons.settings_outlined,
                 'إعدادات الهوية',
-                selectedSection == 'branding',
+                widget.selectedSection == 'branding',
                 onTap: () => _openBranding(context),
               ),
               SidebarItem(
@@ -2508,34 +2556,70 @@ class AdminSidebar extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               const Spacer(),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
-                ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Tenant: demo',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
-                      ),
+              FutureBuilder<List<AdminTenant>>(
+                future: _tenantsFuture,
+                builder: (context, snapshot) {
+                  final tenants = snapshot.data ?? const <AdminTenant>[];
+                  final selectedCode = TenantSelectionSession.code;
+                  final selectedTenant = tenants.where((tenant) => tenant.code == selectedCode).cast<AdminTenant?>().firstOrNull;
+
+                  return Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
                     ),
-                    SizedBox(height: 4),
-                    Text(
-                      'White-Label Store',
-                      style: TextStyle(
-                        color: Color(0xFF94A3B8),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'المتجر الحالي',
+                          style: TextStyle(
+                            color: Color(0xFF94A3B8),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        if (CurrentAdminSession.isSuperAdmin && tenants.isNotEmpty)
+                          DropdownButtonFormField<String>(
+                            value: selectedTenant?.code ?? tenants.first.code,
+                            dropdownColor: const Color(0xFF0F172A),
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+                            decoration: const InputDecoration(
+                              isDense: true,
+                              border: OutlineInputBorder(),
+                            ),
+                            items: tenants.map((tenant) => DropdownMenuItem<String>(value: tenant.code, child: Text(tenant.label))).toList(),
+                            onChanged: (value) {
+                              if (value == null) return;
+                              final tenant = tenants.firstWhere((item) => item.code == value);
+                              TenantSelectionSession.save(tenant);
+                              html.window.location.reload();
+                            },
+                          )
+                        else
+                          Text(
+                            selectedTenant?.label ?? TenantSelectionSession.name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'White-Label Store',
+                          style: TextStyle(
+                            color: Color(0xFF94A3B8),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
             ],
           ),
