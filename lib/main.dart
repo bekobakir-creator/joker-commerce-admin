@@ -149,6 +149,24 @@ class AdminApi {
     }
   }
 
+  Future<AdminProduct> fetchProduct(int productId) async {
+    final uri = Uri.parse('$baseUrl/admin/products/$productId?tenant=$tenantCode');
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'X-Tenant-Code': tenantCode,
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Product Details API Error ${response.statusCode}: ${response.body}');
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    return AdminProduct.fromJson(json['data'] as Map<String, dynamic>);
+  }
   Future<void> updateProduct(int productId, CreateProductRequest request) async {
     final uri = Uri.parse('$baseUrl/admin/products/$productId?tenant=$tenantCode');
 
@@ -187,6 +205,7 @@ class AdminCategory {
 
 class CreateProductVariantInput {
   const CreateProductVariantInput({
+    required this.id,
     required this.name,
     required this.sku,
     required this.price,
@@ -194,6 +213,7 @@ class CreateProductVariantInput {
     required this.quantity,
   });
 
+  final int? id;
   final String name;
   final String? sku;
   final double? price;
@@ -201,7 +221,7 @@ class CreateProductVariantInput {
   final int quantity;
 
   Map<String, dynamic> toJson() {
-    return {
+    final body = <String, dynamic>{
       'name': name,
       'sku': sku,
       'price': price,
@@ -216,6 +236,12 @@ class CreateProductVariantInput {
         }
       ],
     };
+
+    if (id != null) {
+      body['id'] = id;
+    }
+
+    return body;
   }
 }
 
@@ -287,6 +313,24 @@ class CreateProductRequest {
   }
 }
 
+class AdminProductVariant {
+  const AdminProductVariant({
+    required this.id,
+    required this.name,
+    required this.sku,
+    required this.price,
+    required this.salePrice,
+    required this.quantity,
+  });
+
+  final int id;
+  final String name;
+  final String? sku;
+  final double? price;
+  final double? salePrice;
+  final int quantity;
+}
+
 class AdminProduct {
   const AdminProduct({
     required this.id,
@@ -299,9 +343,11 @@ class AdminProduct {
     required this.status,
     required this.hasVariants,
     required this.isFeatured,
+    required this.categoryId,
     required this.categoryName,
     required this.mainImageUrl,
     required this.variantsCount,
+    required this.variants,
   });
 
   final int id;
@@ -314,13 +360,49 @@ class AdminProduct {
   final String status;
   final bool hasVariants;
   final bool isFeatured;
+  final int? categoryId;
   final String? categoryName;
   final String? mainImageUrl;
   final int variantsCount;
+  final List<AdminProductVariant> variants;
 
   factory AdminProduct.fromJson(Map<String, dynamic> json) {
     final category = json['category'] as Map<String, dynamic>?;
-    final variants = json['variants'] as List<dynamic>? ?? [];
+    final variantsJson = json['variants'] as List<dynamic>? ?? [];
+    final inventoryJson = json['inventory'] as List<dynamic>? ?? [];
+
+    int quantityForVariant(int variantId) {
+      for (final item in inventoryJson) {
+        if (item is Map<String, dynamic>) {
+          final itemVariantId = int.tryParse(item['variant_id']?.toString() ?? '');
+          if (itemVariantId == variantId) {
+            return int.tryParse(item['quantity']?.toString() ?? '0') ?? 0;
+          }
+        }
+      }
+
+      return 0;
+    }
+
+    final parsedVariants = variantsJson
+        .whereType<Map<String, dynamic>>()
+        .map((variant) {
+          final id = int.tryParse(variant['id']?.toString() ?? '0') ?? 0;
+
+          return AdminProductVariant(
+            id: id,
+            name: variant['name']?.toString() ?? '',
+            sku: variant['sku']?.toString(),
+            price: variant['price'] == null
+                ? null
+                : double.tryParse(variant['price'].toString()),
+            salePrice: variant['sale_price'] == null
+                ? null
+                : double.tryParse(variant['sale_price'].toString()),
+            quantity: quantityForVariant(id),
+          );
+        })
+        .toList();
 
     return AdminProduct(
       id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
@@ -333,11 +415,13 @@ class AdminProduct {
           : double.tryParse(json['sale_price'].toString()),
       availableQuantity: int.tryParse(json['available_quantity']?.toString() ?? '0') ?? 0,
       status: json['status']?.toString() ?? '',
-      hasVariants: json['has_variants'] == true,
+      hasVariants: json['has_variants'] == true || parsedVariants.isNotEmpty,
       isFeatured: json['is_featured'] == true,
+      categoryId: int.tryParse(category?['id']?.toString() ?? ''),
       categoryName: category?['name']?.toString(),
       mainImageUrl: json['main_image_url']?.toString(),
-      variantsCount: variants.length,
+      variantsCount: parsedVariants.length,
+      variants: parsedVariants,
     );
   }
 
@@ -1321,8 +1405,11 @@ class AddProductDialog extends StatefulWidget {
 }
 
 class _VariantDraft {
-  _VariantDraft();
+  _VariantDraft({
+    this.id,
+  });
 
+  final int? id;
   final TextEditingController name = TextEditingController();
   final TextEditingController sku = TextEditingController();
   final TextEditingController price = TextEditingController();
@@ -1379,7 +1466,20 @@ class _AddProductDialogState extends State<AddProductDialog> {
       _imageUrlController.text = product.mainImageUrl ?? '';
       _isFeatured = product.isFeatured;
       _hasVariants = product.hasVariants;
-    }
+
+      if (product.variants.isNotEmpty) {
+        _variants.clear();
+
+        for (final productVariant in product.variants) {
+          final variant = _VariantDraft(id: productVariant.id);
+          variant.name.text = productVariant.name;
+          variant.sku.text = productVariant.sku ?? '';
+          variant.price.text = productVariant.price?.toStringAsFixed(0) ?? '';
+          variant.salePrice.text = productVariant.salePrice?.toStringAsFixed(0) ?? '';
+          variant.quantity.text = productVariant.quantity.toString();
+          _variants.add(variant);
+        }
+      }    }
   }
 
   @override
@@ -1537,6 +1637,7 @@ class _AddProductDialogState extends State<AddProductDialog> {
         hasVariants: _hasVariants,
         variants: _variants.map((variant) {
           return CreateProductVariantInput(
+            id: variant.id,
             name: variant.name.text.trim(),
             sku: _cleanText(variant.sku.text),
             price: _parseOptionalDouble(variant.price.text),
@@ -2212,6 +2313,11 @@ BoxDecoration cardDecoration() {
     ],
   );
 }
+
+
+
+
+
 
 
 
