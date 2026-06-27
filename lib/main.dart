@@ -2201,6 +2201,20 @@ class AdminSidebar extends StatelessWidget {
   }
 
 
+  Future<void> _logout(BuildContext context) async {
+    if (isDrawer) {
+      Navigator.of(context).pop();
+    }
+
+    try {
+      await AdminApi().logout();
+    } catch (_) {
+      AuthSession.clear();
+    }
+
+    html.window.location.reload();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -2262,6 +2276,13 @@ class AdminSidebar extends StatelessWidget {
                 selectedSection == 'branding',
                 onTap: () => _openBranding(context),
               ),
+              SidebarItem(
+                Icons.logout_outlined,
+                'تسجيل الخروج',
+                false,
+                onTap: () => _logout(context),
+              ),
+              const SizedBox(height: 12),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.all(14),
