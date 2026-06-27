@@ -3808,6 +3808,11 @@ class _OrderDetailsDialogState extends State<OrderDetailsDialog> {
   }
 
   Future<void> _saveStatus() async {
+    if (!CurrentAdminSession.canManageOrders) {
+      Navigator.of(context).pop(false);
+      return;
+    }
+
     if (_status == widget.order.status) {
       Navigator.of(context).pop(false);
       return;
@@ -3951,7 +3956,7 @@ class _OrderDetailsDialogState extends State<OrderDetailsDialog> {
                                 ),
                               )
                               .toList(),
-                          onChanged: _isSaving
+                          onChanged: _isSaving || !CurrentAdminSession.canManageOrders
                               ? null
                               : (value) {
                                   if (value != null) {
@@ -3991,17 +3996,18 @@ class _OrderDetailsDialogState extends State<OrderDetailsDialog> {
             onPressed: _isSaving ? null : () => Navigator.of(context).pop(false),
             child: const Text('إغلاق'),
           ),
-          FilledButton.icon(
-            onPressed: _isSaving ? null : _saveStatus,
-            icon: _isSaving
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.save_outlined),
-            label: Text(_isSaving ? 'جاري الحفظ...' : 'حفظ الحالة'),
-          ),
+          if (CurrentAdminSession.canManageOrders)
+            FilledButton.icon(
+              onPressed: _isSaving ? null : _saveStatus,
+              icon: _isSaving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.save_outlined),
+              label: Text(_isSaving ? 'جاري الحفظ...' : 'حفظ الحالة'),
+            ),
         ],
       ),
     );
