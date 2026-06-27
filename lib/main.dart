@@ -184,6 +184,67 @@ class AdminApi {
       throw Exception('Update Product API Error ${response.statusCode}: ${response.body}');
     }
   }
+  Future<List<AdminOrder>> fetchOrders() async {
+    final uri = Uri.parse('$baseUrl/admin/orders?tenant=$tenantCode');
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'X-Tenant-Code': tenantCode,
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Orders API Error ${response.statusCode}: ${response.body}');
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    final list = json['data'] as List<dynamic>? ?? [];
+
+    return list
+        .map((item) => AdminOrder.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<AdminOrder> fetchOrder(String orderNumber) async {
+    final uri = Uri.parse('$baseUrl/admin/orders/$orderNumber?tenant=$tenantCode');
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'X-Tenant-Code': tenantCode,
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Order Details API Error ${response.statusCode}: ${response.body}');
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    return AdminOrder.fromJson(json['data'] as Map<String, dynamic>);
+  }
+
+  Future<void> updateOrderStatus(String orderNumber, String status) async {
+    final uri = Uri.parse('$baseUrl/orders/$orderNumber/status?tenant=$tenantCode');
+
+    final response = await http.patch(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-Tenant-Code': tenantCode,
+      },
+      body: jsonEncode({
+        'status': status,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Update Order Status API Error ${response.statusCode}: ${response.body}');
+    }
+  }
 }
 
 class AdminCategory {
@@ -444,6 +505,197 @@ class AdminProduct {
   }
 }
 
+class AdminOrderItem {
+  const AdminOrderItem({
+    required this.id,
+    required this.productId,
+    required this.productVariantId,
+    required this.productName,
+    required this.variantName,
+    required this.sku,
+    required this.quantity,
+    required this.unitPrice,
+    required this.total,
+  });
+
+  final int id;
+  final int productId;
+  final int? productVariantId;
+  final String productName;
+  final String? variantName;
+  final String? sku;
+  final int quantity;
+  final double unitPrice;
+  final double total;
+
+  factory AdminOrderItem.fromJson(Map<String, dynamic> json) {
+    return AdminOrderItem(
+      id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      productId: int.tryParse(json['product_id']?.toString() ?? '0') ?? 0,
+      productVariantId: int.tryParse(json['product_variant_id']?.toString() ?? ''),
+      productName: json['product_name']?.toString() ?? '',
+      variantName: json['variant_name']?.toString(),
+      sku: json['sku']?.toString(),
+      quantity: int.tryParse(json['quantity']?.toString() ?? '0') ?? 0,
+      unitPrice: double.tryParse(json['unit_price']?.toString() ?? '0') ?? 0,
+      total: double.tryParse(json['total']?.toString() ?? '0') ?? 0,
+    );
+  }
+
+  String get unitPriceText => '${unitPrice.toStringAsFixed(0)} د.ع';
+
+  String get totalText => '${total.toStringAsFixed(0)} د.ع';
+}
+
+class AdminOrder {
+  const AdminOrder({
+    required this.id,
+    required this.orderNumber,
+    required this.status,
+    required this.paymentMethod,
+    required this.paymentStatus,
+    required this.subtotal,
+    required this.discount,
+    required this.deliveryFee,
+    required this.total,
+    required this.customerName,
+    required this.customerPhone,
+    required this.customerEmail,
+    required this.deliveryCity,
+    required this.deliveryArea,
+    required this.deliveryAddress,
+    required this.deliveryNearestPoint,
+    required this.branchName,
+    required this.warehouseName,
+    required this.items,
+    required this.customerNotes,
+    required this.createdAt,
+  });
+
+  final int id;
+  final String orderNumber;
+  final String status;
+  final String paymentMethod;
+  final String paymentStatus;
+  final double subtotal;
+  final double discount;
+  final double deliveryFee;
+  final double total;
+  final String customerName;
+  final String customerPhone;
+  final String? customerEmail;
+  final String? deliveryCity;
+  final String? deliveryArea;
+  final String? deliveryAddress;
+  final String? deliveryNearestPoint;
+  final String? branchName;
+  final String? warehouseName;
+  final List<AdminOrderItem> items;
+  final String? customerNotes;
+  final DateTime? createdAt;
+
+  factory AdminOrder.fromJson(Map<String, dynamic> json) {
+    final customer = json['customer'] as Map<String, dynamic>? ?? {};
+    final delivery = json['delivery'] as Map<String, dynamic>? ?? {};
+    final branch = json['branch'] as Map<String, dynamic>? ?? {};
+    final warehouse = json['warehouse'] as Map<String, dynamic>? ?? {};
+    final itemsJson = json['items'] as List<dynamic>? ?? [];
+
+    return AdminOrder(
+      id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      orderNumber: json['order_number']?.toString() ?? '',
+      status: json['status']?.toString() ?? 'pending',
+      paymentMethod: json['payment_method']?.toString() ?? '',
+      paymentStatus: json['payment_status']?.toString() ?? '',
+      subtotal: double.tryParse(json['subtotal']?.toString() ?? '0') ?? 0,
+      discount: double.tryParse(json['discount']?.toString() ?? '0') ?? 0,
+      deliveryFee: double.tryParse(json['delivery_fee']?.toString() ?? '0') ?? 0,
+      total: double.tryParse(json['total']?.toString() ?? '0') ?? 0,
+      customerName: customer['name']?.toString() ?? '',
+      customerPhone: customer['phone']?.toString() ?? '',
+      customerEmail: customer['email']?.toString(),
+      deliveryCity: delivery['city']?.toString(),
+      deliveryArea: delivery['area']?.toString(),
+      deliveryAddress: delivery['address']?.toString(),
+      deliveryNearestPoint: delivery['nearest_point']?.toString(),
+      branchName: branch['name']?.toString(),
+      warehouseName: warehouse['name']?.toString(),
+      items: itemsJson
+          .whereType<Map<String, dynamic>>()
+          .map(AdminOrderItem.fromJson)
+          .toList(),
+      customerNotes: json['customer_notes']?.toString(),
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? ''),
+    );
+  }
+
+  String get totalText => '${total.toStringAsFixed(0)} د.ع';
+
+  String get subtotalText => '${subtotal.toStringAsFixed(0)} د.ع';
+
+  String get deliveryFeeText => '${deliveryFee.toStringAsFixed(0)} د.ع';
+
+  String get discountText => '${discount.toStringAsFixed(0)} د.ع';
+
+  int get itemsCount => items.fold<int>(0, (sum, item) => sum + item.quantity);
+
+  String get statusLabel {
+    switch (status) {
+      case 'pending':
+        return 'جديد';
+      case 'confirmed':
+        return 'تم التأكيد';
+      case 'preparing':
+        return 'قيد التجهيز';
+      case 'out_for_delivery':
+        return 'خرج للتوصيل';
+      case 'delivered':
+        return 'تم التسليم';
+      case 'cancelled':
+        return 'ملغي';
+      default:
+        return status;
+    }
+  }
+
+  String get paymentStatusLabel {
+    switch (paymentStatus) {
+      case 'paid':
+        return 'مدفوع';
+      case 'unpaid':
+        return 'غير مدفوع';
+      default:
+        return paymentStatus;
+    }
+  }
+
+  String get createdAtText {
+    final date = createdAt;
+    if (date == null) {
+      return '-';
+    }
+
+    final local = date.toLocal();
+    final year = local.year.toString();
+    final month = local.month.toString().padLeft(2, '0');
+    final day = local.day.toString().padLeft(2, '0');
+    final hour = local.hour.toString().padLeft(2, '0');
+    final minute = local.minute.toString().padLeft(2, '0');
+
+    return '$year-$month-$day $hour:$minute';
+  }
+
+  bool matches(String query) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return true;
+
+    return orderNumber.toLowerCase().contains(q) ||
+        customerName.toLowerCase().contains(q) ||
+        customerPhone.toLowerCase().contains(q) ||
+        (deliveryCity ?? '').toLowerCase().contains(q) ||
+        (deliveryAddress ?? '').toLowerCase().contains(q);
+  }
+}
 class ProductsDashboardPage extends StatefulWidget {
   const ProductsDashboardPage({super.key});
 
@@ -1279,9 +1531,44 @@ class MiniTag extends StatelessWidget {
 }
 
 class AdminSidebar extends StatelessWidget {
-  const AdminSidebar({super.key, this.isDrawer = false});
+  const AdminSidebar({
+    super.key,
+    this.isDrawer = false,
+    this.selectedSection = 'products',
+  });
 
   final bool isDrawer;
+  final String selectedSection;
+
+  void _openProducts(BuildContext context) {
+    if (selectedSection == 'products') {
+      if (isDrawer) {
+        Navigator.of(context).pop();
+      }
+      return;
+    }
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => const ProductsDashboardPage(),
+      ),
+    );
+  }
+
+  void _openOrders(BuildContext context) {
+    if (selectedSection == 'orders') {
+      if (isDrawer) {
+        Navigator.of(context).pop();
+      }
+      return;
+    }
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => const OrdersDashboardPage(),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1311,8 +1598,18 @@ class AdminSidebar extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 30),
-              const SidebarItem(Icons.inventory_2_outlined, 'المنتجات', true),
-              const SidebarItem(Icons.receipt_long_outlined, 'الطلبات', false),
+              SidebarItem(
+                Icons.inventory_2_outlined,
+                'المنتجات',
+                selectedSection == 'products',
+                onTap: () => _openProducts(context),
+              ),
+              SidebarItem(
+                Icons.receipt_long_outlined,
+                'الطلبات',
+                selectedSection == 'orders',
+                onTap: () => _openOrders(context),
+              ),
               const SidebarItem(Icons.category_outlined, 'الأقسام', false),
               const SidebarItem(Icons.storefront_outlined, 'المخازن والفروع', false),
               const SidebarItem(Icons.local_offer_outlined, 'الخصومات', false),
@@ -1356,11 +1653,18 @@ class AdminSidebar extends StatelessWidget {
 }
 
 class SidebarItem extends StatelessWidget {
-  const SidebarItem(this.icon, this.label, this.selected, {super.key});
+  const SidebarItem(
+    this.icon,
+    this.label,
+    this.selected, {
+    super.key,
+    this.onTap,
+  });
 
   final IconData icon;
   final String label;
   final bool selected;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1373,6 +1677,7 @@ class SidebarItem extends StatelessWidget {
       ),
       child: ListTile(
         dense: true,
+        onTap: onTap,
         leading: Icon(
           icon,
           color: selected ? Colors.white : const Color(0xFF94A3B8),
@@ -1385,6 +1690,963 @@ class SidebarItem extends StatelessWidget {
           ),
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+    );
+  }
+}
+
+class OrdersDashboardPage extends StatefulWidget {
+  const OrdersDashboardPage({super.key});
+
+  @override
+  State<OrdersDashboardPage> createState() => _OrdersDashboardPageState();
+}
+
+class _OrdersDashboardPageState extends State<OrdersDashboardPage> {
+  final AdminApi _api = AdminApi();
+  final TextEditingController _searchController = TextEditingController();
+
+  late Future<List<AdminOrder>> _future;
+  String _search = '';
+  String _statusFilter = 'all';
+
+  static const List<String> _statuses = [
+    'all',
+    'pending',
+    'confirmed',
+    'preparing',
+    'out_for_delivery',
+    'delivered',
+    'cancelled',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _api.fetchOrders();
+    _searchController.addListener(() {
+      setState(() {
+        _search = _searchController.text;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _reload() {
+    setState(() {
+      _future = _api.fetchOrders();
+    });
+  }
+
+  Future<void> _openOrderDetails(AdminOrder order) async {
+    final changed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => OrderDetailsDialog(
+        api: _api,
+        order: order,
+      ),
+    );
+
+    if (changed == true) {
+      _reload();
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم تحديث حالة الطلب')),
+      );
+    }
+  }
+
+  List<AdminOrder> _filterOrders(List<AdminOrder> orders) {
+    return orders.where((order) {
+      final matchesSearch = order.matches(_search);
+      final matchesStatus = _statusFilter == 'all' || order.status == _statusFilter;
+
+      return matchesSearch && matchesStatus;
+    }).toList();
+  }
+
+  String _statusLabel(String status) {
+    switch (status) {
+      case 'all':
+        return 'الكل';
+      case 'pending':
+        return 'جديد';
+      case 'confirmed':
+        return 'تم التأكيد';
+      case 'preparing':
+        return 'قيد التجهيز';
+      case 'out_for_delivery':
+        return 'خرج للتوصيل';
+      case 'delivered':
+        return 'تم التسليم';
+      case 'cancelled':
+        return 'ملغي';
+      default:
+        return status;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 720;
+
+          if (isMobile) {
+            return Scaffold(
+              appBar: AppBar(
+                backgroundColor: Colors.white,
+                surfaceTintColor: Colors.white,
+                title: const Text(
+                  'إدارة الطلبات',
+                  style: TextStyle(
+                    color: Color(0xFF0F172A),
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                actions: [
+                  IconButton(
+                    onPressed: _reload,
+                    icon: const Icon(Icons.refresh),
+                  ),
+                ],
+              ),
+              drawer: const Drawer(child: AdminSidebar(isDrawer: true, selectedSection: 'orders')),
+              body: OrdersDashboardBody(
+                future: _future,
+                searchController: _searchController,
+                search: _search,
+                statusFilter: _statusFilter,
+                statuses: _statuses,
+                statusLabel: _statusLabel,
+                onStatusFilterChanged: (value) {
+                  setState(() {
+                    _statusFilter = value;
+                  });
+                },
+                onReload: _reload,
+                onOpenDetails: _openOrderDetails,
+                filterOrders: _filterOrders,
+                isMobile: true,
+              ),
+            );
+          }
+
+          return Scaffold(
+            body: Row(
+              children: [
+                const AdminSidebar(selectedSection: 'orders'),
+                Expanded(
+                  child: OrdersDashboardBody(
+                    future: _future,
+                    searchController: _searchController,
+                    search: _search,
+                    statusFilter: _statusFilter,
+                    statuses: _statuses,
+                    statusLabel: _statusLabel,
+                    onStatusFilterChanged: (value) {
+                      setState(() {
+                        _statusFilter = value;
+                      });
+                    },
+                    onReload: _reload,
+                    onOpenDetails: _openOrderDetails,
+                    filterOrders: _filterOrders,
+                    isMobile: false,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class OrdersDashboardBody extends StatelessWidget {
+  const OrdersDashboardBody({
+    super.key,
+    required this.future,
+    required this.searchController,
+    required this.search,
+    required this.statusFilter,
+    required this.statuses,
+    required this.statusLabel,
+    required this.onStatusFilterChanged,
+    required this.onReload,
+    required this.onOpenDetails,
+    required this.filterOrders,
+    required this.isMobile,
+  });
+
+  final Future<List<AdminOrder>> future;
+  final TextEditingController searchController;
+  final String search;
+  final String statusFilter;
+  final List<String> statuses;
+  final String Function(String status) statusLabel;
+  final ValueChanged<String> onStatusFilterChanged;
+  final VoidCallback onReload;
+  final ValueChanged<AdminOrder> onOpenDetails;
+  final List<AdminOrder> Function(List<AdminOrder> orders) filterOrders;
+  final bool isMobile;
+
+  @override
+  Widget build(BuildContext context) {
+    final padding = isMobile ? 14.0 : 22.0;
+
+    return Container(
+      color: const Color(0xFFF1F5F9),
+      child: Column(
+        children: [
+          OrdersHeader(
+            searchController: searchController,
+            statusFilter: statusFilter,
+            statuses: statuses,
+            statusLabel: statusLabel,
+            onStatusFilterChanged: onStatusFilterChanged,
+            onReload: onReload,
+            isMobile: isMobile,
+          ),
+          Expanded(
+            child: FutureBuilder<List<AdminOrder>>(
+              future: future,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return ErrorPanel(
+                    message: snapshot.error.toString(),
+                    onRetry: onReload,
+                  );
+                }
+
+                final allOrders = snapshot.data ?? [];
+                final orders = filterOrders(allOrders);
+
+                return Column(
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(padding, 0, padding, 14),
+                      child: OrdersSummaryGrid(
+                        orders: allOrders,
+                        isMobile: isMobile,
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(padding, 0, padding, 10),
+                      child: Row(
+                        children: [
+                          const Text(
+                            'قائمة الطلبات',
+                            style: TextStyle(
+                              color: Color(0xFF0F172A),
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            '${orders.length} طلب',
+                            style: const TextStyle(
+                              color: Color(0xFF64748B),
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: orders.isEmpty
+                          ? const EmptyOrders()
+                          : ListView.separated(
+                              padding: EdgeInsets.fromLTRB(padding, 0, padding, 32),
+                              itemCount: orders.length,
+                              separatorBuilder: (_, __) => const SizedBox(height: 12),
+                              itemBuilder: (context, index) {
+                                final order = orders[index];
+
+                                if (isMobile) {
+                                  return MobileOrderCard(
+                                    order: order,
+                                    onOpenDetails: () => onOpenDetails(order),
+                                  );
+                                }
+
+                                return DesktopOrderRow(
+                                  order: order,
+                                  onOpenDetails: () => onOpenDetails(order),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class OrdersHeader extends StatelessWidget {
+  const OrdersHeader({
+    super.key,
+    required this.searchController,
+    required this.statusFilter,
+    required this.statuses,
+    required this.statusLabel,
+    required this.onStatusFilterChanged,
+    required this.onReload,
+    required this.isMobile,
+  });
+
+  final TextEditingController searchController;
+  final String statusFilter;
+  final List<String> statuses;
+  final String Function(String status) statusLabel;
+  final ValueChanged<String> onStatusFilterChanged;
+  final VoidCallback onReload;
+  final bool isMobile;
+
+  @override
+  Widget build(BuildContext context) {
+    final search = TextField(
+      controller: searchController,
+      textInputAction: TextInputAction.search,
+      decoration: InputDecoration(
+        hintText: 'بحث برقم الطلب أو اسم الزبون أو الهاتف...',
+        prefixIcon: const Icon(Icons.search),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+
+    final filter = DropdownButtonFormField<String>(
+      value: statusFilter,
+      items: statuses
+          .map(
+            (status) => DropdownMenuItem<String>(
+              value: status,
+              child: Text(statusLabel(status)),
+            ),
+          )
+          .toList(),
+      onChanged: (value) {
+        if (value != null) {
+          onStatusFilterChanged(value);
+        }
+      },
+      decoration: InputDecoration(
+        labelText: 'الحالة',
+        prefixIcon: const Icon(Icons.filter_alt_outlined),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+
+    return Container(
+      margin: EdgeInsets.all(isMobile ? 14 : 22),
+      padding: EdgeInsets.all(isMobile ? 18 : 22),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.12),
+            blurRadius: 24,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: isMobile
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const _OrdersHeaderText(),
+                const SizedBox(height: 16),
+                search,
+                const SizedBox(height: 12),
+                filter,
+              ],
+            )
+          : Row(
+              children: [
+                const Expanded(child: _OrdersHeaderText()),
+                SizedBox(width: 360, child: search),
+                const SizedBox(width: 12),
+                SizedBox(width: 190, child: filter),
+                const SizedBox(width: 12),
+                OutlinedButton.icon(
+                  onPressed: onReload,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: BorderSide(color: Colors.white.withValues(alpha: 0.4)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  ),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('تحديث'),
+                ),
+              ],
+            ),
+    );
+  }
+}
+
+class _OrdersHeaderText extends StatelessWidget {
+  const _OrdersHeaderText();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'إدارة الطلبات',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 27,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        SizedBox(height: 8),
+        Text(
+          'تابع طلبات الزبائن، تفاصيل العنوان، المنتجات، وتغيير حالة الطلب.',
+          style: TextStyle(
+            color: Color(0xFFCBD5E1),
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class OrdersSummaryGrid extends StatelessWidget {
+  const OrdersSummaryGrid({
+    super.key,
+    required this.orders,
+    required this.isMobile,
+  });
+
+  final List<AdminOrder> orders;
+  final bool isMobile;
+
+  @override
+  Widget build(BuildContext context) {
+    final pending = orders.where((o) => o.status == 'pending').length;
+    final processing = orders.where((o) => o.status == 'confirmed').length;
+    final shipped = orders.where((o) => o.status == 'preparing').length;
+    final delivered = orders.where((o) => o.status == 'delivered').length;
+    final totalSales = orders
+        .where((o) => o.status != 'cancelled')
+        .fold<double>(0, (sum, order) => sum + order.total);
+
+    final cards = [
+      SummaryData('كل الطلبات', orders.length.toString(), Icons.receipt_long_outlined),
+      SummaryData('جديد', pending.toString(), Icons.fiber_new_outlined),
+      SummaryData('قيد التجهيز', processing.toString(), Icons.inventory_outlined),
+      SummaryData('تم الشحن', shipped.toString(), Icons.local_shipping_outlined),
+      SummaryData('تم التسليم', delivered.toString(), Icons.check_circle_outline),
+      SummaryData('إجمالي غير ملغي', '${totalSales.toStringAsFixed(0)} د.ع', Icons.payments_outlined),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = isMobile ? 2 : 6;
+        final gap = isMobile ? 10.0 : 12.0;
+        final width = (constraints.maxWidth - (gap * (columns - 1))) / columns;
+
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: cards
+              .map(
+                (card) => SizedBox(
+                  width: width,
+                  child: SummaryCard(data: card, compact: isMobile),
+                ),
+              )
+              .toList(),
+        );
+      },
+    );
+  }
+}
+
+class DesktopOrderRow extends StatelessWidget {
+  const DesktopOrderRow({
+    super.key,
+    required this.order,
+    required this.onOpenDetails,
+  });
+
+  final AdminOrder order;
+  final VoidCallback onOpenDetails;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: cardDecoration(),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: OrderMainInfo(order: order),
+          ),
+          Expanded(
+            flex: 2,
+            child: InfoBlock(title: 'الزبون', value: order.customerName.isEmpty ? '-' : order.customerName),
+          ),
+          Expanded(child: InfoBlock(title: 'الهاتف', value: order.customerPhone.isEmpty ? '-' : order.customerPhone)),
+          Expanded(child: InfoBlock(title: 'المجموع', value: order.totalText)),
+          Expanded(child: InfoBlock(title: 'المنتجات', value: order.itemsCount.toString())),
+          OrderStatusChip(status: order.status, label: order.statusLabel),
+          const SizedBox(width: 12),
+          OutlinedButton.icon(
+            onPressed: onOpenDetails,
+            icon: const Icon(Icons.visibility_outlined, size: 18),
+            label: const Text('تفاصيل'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class MobileOrderCard extends StatelessWidget {
+  const MobileOrderCard({
+    super.key,
+    required this.order,
+    required this.onOpenDetails,
+  });
+
+  final AdminOrder order;
+  final VoidCallback onOpenDetails;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          OrderMainInfo(order: order),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(child: MetricBox(title: 'المجموع', value: order.totalText)),
+              const SizedBox(width: 8),
+              Expanded(child: MetricBox(title: 'المنتجات', value: order.itemsCount.toString())),
+              const SizedBox(width: 8),
+              Expanded(child: MetricBox(title: 'الدفع', value: order.paymentStatusLabel)),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              OrderStatusChip(status: order.status, label: order.statusLabel),
+              const Spacer(),
+              OutlinedButton.icon(
+                onPressed: onOpenDetails,
+                icon: const Icon(Icons.visibility_outlined, size: 18),
+                label: const Text('تفاصيل'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class OrderMainInfo extends StatelessWidget {
+  const OrderMainInfo({super.key, required this.order});
+
+  final AdminOrder order;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          order.orderNumber,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: Color(0xFF0F172A),
+            fontSize: 16,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 7),
+        Wrap(
+          spacing: 7,
+          runSpacing: 7,
+          children: [
+            MiniTag(order.createdAtText),
+            if (order.deliveryCity != null && order.deliveryCity!.isNotEmpty) MiniTag(order.deliveryCity!),
+            if (order.paymentStatus.isNotEmpty) MiniTag(order.paymentStatusLabel),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class OrderStatusChip extends StatelessWidget {
+  const OrderStatusChip({
+    super.key,
+    required this.status,
+    required this.label,
+  });
+
+  final String status;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    Color color;
+
+    switch (status) {
+      case 'pending':
+        color = const Color(0xFF2563EB);
+        break;
+      case 'confirmed':
+        color = const Color(0xFF9333EA);
+        break;
+      case 'preparing':
+        color = const Color(0xFFF59E0B);
+        break;
+      case 'out_for_delivery':
+        color = const Color(0xFF0EA5E9);
+        break;
+      case 'delivered':
+        color = const Color(0xFF16A34A);
+        break;
+      case 'cancelled':
+        color = const Color(0xFFDC2626);
+        break;
+      default:
+        color = const Color(0xFF64748B);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w900,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+}
+
+class OrderDetailsDialog extends StatefulWidget {
+  const OrderDetailsDialog({
+    super.key,
+    required this.api,
+    required this.order,
+  });
+
+  final AdminApi api;
+  final AdminOrder order;
+
+  @override
+  State<OrderDetailsDialog> createState() => _OrderDetailsDialogState();
+}
+
+class _OrderDetailsDialogState extends State<OrderDetailsDialog> {
+  late String _status;
+  bool _isSaving = false;
+
+  static const List<String> _statuses = [
+    'pending',
+    'confirmed',
+    'preparing',
+    'out_for_delivery',
+    'delivered',
+    'cancelled',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _status = widget.order.status;
+  }
+
+  String _statusLabel(String status) {
+    switch (status) {
+      case 'pending':
+        return 'جديد';
+      case 'confirmed':
+        return 'تم التأكيد';
+      case 'preparing':
+        return 'قيد التجهيز';
+      case 'out_for_delivery':
+        return 'خرج للتوصيل';
+      case 'delivered':
+        return 'تم التسليم';
+      case 'cancelled':
+        return 'ملغي';
+      default:
+        return status;
+    }
+  }
+
+  Future<void> _saveStatus() async {
+    if (_status == widget.order.status) {
+      Navigator.of(context).pop(false);
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      await widget.api.updateOrderStatus(widget.order.orderNumber, _status);
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.of(context).pop(true);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isSaving = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تعذر تحديث حالة الطلب: $error')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final order = widget.order;
+
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: AlertDialog(
+        backgroundColor: const Color(0xFFF8FAFC),
+        surfaceTintColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(18),
+        titlePadding: const EdgeInsets.fromLTRB(24, 22, 24, 0),
+        contentPadding: const EdgeInsets.fromLTRB(24, 18, 24, 10),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+        title: Text(
+          'تفاصيل الطلب ${order.orderNumber}',
+          style: const TextStyle(
+            color: Color(0xFF0F172A),
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        content: SizedBox(
+          width: 860,
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                _DialogSection(
+                  title: 'معلومات الزبون والتوصيل',
+                  child: Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      SizedBox(width: 250, child: InfoBlock(title: 'اسم الزبون', value: order.customerName.isEmpty ? '-' : order.customerName)),
+                      SizedBox(width: 250, child: InfoBlock(title: 'الهاتف', value: order.customerPhone.isEmpty ? '-' : order.customerPhone)),
+                      SizedBox(width: 250, child: InfoBlock(title: 'المدينة/المحافظة', value: order.deliveryCity ?? '-')),
+                      SizedBox(width: 250, child: InfoBlock(title: 'المنطقة', value: order.deliveryArea ?? '-')),
+                      SizedBox(width: 520, child: InfoBlock(title: 'العنوان', value: order.deliveryAddress ?? '-')),
+                      SizedBox(width: 250, child: InfoBlock(title: 'أقرب نقطة', value: order.deliveryNearestPoint ?? '-')),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _DialogSection(
+                  title: 'المنتجات',
+                  child: Column(
+                    children: [
+                      for (final item in order.items) ...[
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.productName,
+                                      style: const TextStyle(
+                                        color: Color(0xFF0F172A),
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Wrap(
+                                      spacing: 7,
+                                      runSpacing: 7,
+                                      children: [
+                                        if (item.variantName != null && item.variantName!.isNotEmpty) MiniTag(item.variantName!),
+                                        if (item.sku != null && item.sku!.isNotEmpty) MiniTag(item.sku!),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(width: 90, child: InfoBlock(title: 'الكمية', value: item.quantity.toString())),
+                              SizedBox(width: 130, child: InfoBlock(title: 'السعر', value: item.unitPriceText)),
+                              SizedBox(width: 130, child: InfoBlock(title: 'المجموع', value: item.totalText)),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _DialogSection(
+                  title: 'الدفع والحالة',
+                  child: Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      SizedBox(width: 180, child: InfoBlock(title: 'المجموع الفرعي', value: order.subtotalText)),
+                      SizedBox(width: 180, child: InfoBlock(title: 'التوصيل', value: order.deliveryFeeText)),
+                      SizedBox(width: 180, child: InfoBlock(title: 'الخصم', value: order.discountText)),
+                      SizedBox(width: 180, child: InfoBlock(title: 'الإجمالي', value: order.totalText)),
+                      SizedBox(width: 220, child: InfoBlock(title: 'حالة الدفع', value: order.paymentStatusLabel)),
+                      SizedBox(
+                        width: 260,
+                        child: DropdownButtonFormField<String>(
+                          value: _status,
+                          items: _statuses
+                              .map(
+                                (status) => DropdownMenuItem<String>(
+                                  value: status,
+                                  child: Text(_statusLabel(status)),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: _isSaving
+                              ? null
+                              : (value) {
+                                  if (value != null) {
+                                    setState(() {
+                                      _status = value;
+                                    });
+                                  }
+                                },
+                          decoration: const InputDecoration(
+                            labelText: 'حالة الطلب',
+                            prefixIcon: Icon(Icons.track_changes_outlined),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (order.customerNotes != null && order.customerNotes!.isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  _DialogSection(
+                    title: 'ملاحظات الزبون',
+                    child: Text(
+                      order.customerNotes!,
+                      style: const TextStyle(
+                        color: Color(0xFF475569),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: _isSaving ? null : () => Navigator.of(context).pop(false),
+            child: const Text('إغلاق'),
+          ),
+          FilledButton.icon(
+            onPressed: _isSaving ? null : _saveStatus,
+            icon: _isSaving
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.save_outlined),
+            label: Text(_isSaving ? 'جاري الحفظ...' : 'حفظ الحالة'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class EmptyOrders extends StatelessWidget {
+  const EmptyOrders({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text(
+        'لا توجد طلبات مطابقة',
+        style: TextStyle(
+          color: Color(0xFF64748B),
+          fontWeight: FontWeight.w900,
+        ),
       ),
     );
   }
@@ -2313,6 +3575,12 @@ BoxDecoration cardDecoration() {
     ],
   );
 }
+
+
+
+
+
+
 
 
 
