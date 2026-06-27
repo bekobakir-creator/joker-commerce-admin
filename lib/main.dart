@@ -463,6 +463,26 @@ class AdminApi {
         .replaceFirst('http://127.0.0.1', apiOrigin);
   }
 
+  Future<List<AdminAccount>> fetchAccounts() async {
+    final uri = Uri.parse('$baseUrl/admin/accounts');
+
+    final response = await http.get(
+      uri,
+      headers: _jsonHeaders,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Accounts API Error ${response.statusCode}: ${response.body}');
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    final list = json['data'] as List<dynamic>? ?? [];
+
+    return list
+        .map((item) => AdminAccount.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<void> createProduct(CreateProductRequest request) async {
     final uri = Uri.parse('$baseUrl/admin/products?tenant=$tenantCode');
 
@@ -1144,6 +1164,62 @@ class AdminOrder {
   }
 
 }
+class AdminAccount {
+  const AdminAccount({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.phone,
+    required this.role,
+    required this.isActive,
+    this.tenantId,
+    this.tenantName,
+  });
+
+  final int id;
+  final int? tenantId;
+  final String name;
+  final String email;
+  final String phone;
+  final String role;
+  final bool isActive;
+  final String? tenantName;
+
+  factory AdminAccount.fromJson(Map<String, dynamic> json) {
+    final tenant = json['tenant'];
+
+    return AdminAccount(
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      tenantId: (json['tenant_id'] as num?)?.toInt(),
+      name: json['name']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      phone: json['phone']?.toString() ?? '',
+      role: json['role']?.toString() ?? '',
+      isActive: json['is_active'] == true || json['is_active'] == 1,
+      tenantName: tenant is Map<String, dynamic> ? tenant['name']?.toString() : null,
+    );
+  }
+
+  String get roleLabel {
+    switch (role) {
+      case 'super_admin':
+        return 'Super Admin';
+      case 'tenant_admin':
+        return 'مدير متجر';
+      case 'manager':
+        return 'مدير';
+      case 'orders_staff':
+        return 'موظف طلبات';
+      case 'inventory_staff':
+        return 'موظف مخزون';
+      default:
+        return role;
+    }
+  }
+
+  String get statusLabel => isActive ? 'فعال' : 'معطل';
+}
+
 class ProductsDashboardPage extends StatefulWidget {
   const ProductsDashboardPage({super.key});
 
@@ -2079,6 +2155,21 @@ class AdminSidebar extends StatelessWidget {
 
 
 
+  void _openAccounts(BuildContext context) {
+    if (selectedSection == 'accounts') {
+      if (isDrawer) {
+        Navigator.of(context).pop();
+      }
+      return;
+    }
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => const AccountsDashboardPage(),
+      ),
+    );
+  }
+
   void _openCommercialSettings(BuildContext context) {
     if (selectedSection == 'commercial') {
       if (isDrawer) {
@@ -2149,6 +2240,12 @@ class AdminSidebar extends StatelessWidget {
                 'الطلبات',
                 selectedSection == 'orders',
                 onTap: () => _openOrders(context),
+              ),
+              SidebarItem(
+                Icons.manage_accounts_outlined,
+                'الحسابات',
+                selectedSection == 'accounts',
+                onTap: () => _openAccounts(context),
               ),
               const SidebarItem(Icons.category_outlined, 'الأقسام', false),
               const SidebarItem(Icons.storefront_outlined, 'المخازن والفروع', false),
@@ -2245,6 +2342,242 @@ class SidebarItem extends StatelessWidget {
     );
   }
 }
+
+class AccountsDashboardPage extends StatefulWidget {
+  const AccountsDashboardPage({super.key});
+
+  @override
+  State<AccountsDashboardPage> createState() => _AccountsDashboardPageState();
+}
+
+class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
+  final AdminApi _api = AdminApi();
+  late Future<List<AdminAccount>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _api.fetchAccounts();
+  }
+
+  Future<void> _reload() async {
+    setState(() {
+      _future = _api.fetchAccounts();
+    });
+    await _future;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 900;
+
+          return Scaffold(
+            drawer: isMobile ? const Drawer(child: AdminSidebar(isDrawer: true, selectedSection: 'accounts')) : null,
+            appBar: isMobile
+                ? AppBar(
+                    title: const Text('إدارة الحسابات'),
+                    backgroundColor: const Color(0xFF0F172A),
+                    foregroundColor: Colors.white,
+                    actions: [IconButton(onPressed: _reload, icon: const Icon(Icons.refresh))],
+                  )
+                : null,
+            body: Row(
+              children: [
+                if (!isMobile) const AdminSidebar(selectedSection: 'accounts'),
+                Expanded(
+                  child: Container(
+                    color: const Color(0xFFF1F5F9),
+                    child: RefreshIndicator(
+                      onRefresh: _reload,
+                      child: FutureBuilder<List<AdminAccount>>(
+                        future: _future,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator());
+                          }
+
+                          if (snapshot.hasError) {
+                            return ListView(
+                              padding: EdgeInsets.all(isMobile ? 14 : 24),
+                              children: [
+                                _AccountsHeader(isMobile: isMobile, onReload: _reload),
+                                const SizedBox(height: 18),
+                                ErrorPanel(message: snapshot.error.toString(), onRetry: _reload),
+                              ],
+                            );
+                          }
+
+                          final accounts = snapshot.data ?? [];
+
+                          return ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: EdgeInsets.all(isMobile ? 14 : 24),
+                            children: [
+                              _AccountsHeader(isMobile: isMobile, onReload: _reload),
+                              const SizedBox(height: 18),
+                              Wrap(
+                                spacing: 12,
+                                runSpacing: 12,
+                                children: [
+                                  _AccountStatCard(title: 'كل الحسابات', value: accounts.length.toString(), icon: Icons.manage_accounts_outlined),
+                                  _AccountStatCard(title: 'فعالة', value: accounts.where((a) => a.isActive).length.toString(), icon: Icons.check_circle_outline),
+                                  _AccountStatCard(title: 'معطلة', value: accounts.where((a) => !a.isActive).length.toString(), icon: Icons.block_outlined),
+                                ],
+                              ),
+                              const SizedBox(height: 18),
+                              Row(
+                                children: [
+                                  const Text('قائمة الحسابات', style: TextStyle(color: Color(0xFF0F172A), fontSize: 20, fontWeight: FontWeight.w900)),
+                                  const Spacer(),
+                                  Text('${accounts.length} حساب', style: const TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w800)),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              if (accounts.isEmpty)
+                                Container(
+                                  padding: const EdgeInsets.all(24),
+                                  decoration: cardDecoration(),
+                                  child: const Text('لا توجد حسابات إدارية بعد.', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w800)),
+                                )
+                              else
+                                ...accounts.map((account) => Padding(padding: const EdgeInsets.only(bottom: 12), child: AccountCard(account: account, isMobile: isMobile))),
+                              const SizedBox(height: 36),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _AccountsHeader extends StatelessWidget {
+  const _AccountsHeader({required this.isMobile, required this.onReload});
+
+  final bool isMobile;
+  final Future<void> Function() onReload;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(isMobile ? 18 : 24),
+      decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(26)),
+      child: Row(
+        children: [
+          const Icon(Icons.manage_accounts_outlined, color: Colors.white, size: 34),
+          const SizedBox(width: 14),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('إدارة الحسابات', style: TextStyle(color: Colors.white, fontSize: 25, fontWeight: FontWeight.w900)),
+                SizedBox(height: 6),
+                Text('عرض حسابات المنصة ومدراء المتاجر والموظفين.', style: TextStyle(color: Color(0xFFCBD5E1), fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+          if (!isMobile) OutlinedButton.icon(onPressed: onReload, style: OutlinedButton.styleFrom(foregroundColor: Colors.white), icon: const Icon(Icons.refresh), label: const Text('تحديث')),
+        ],
+      ),
+    );
+  }
+}
+
+class _AccountStatCard extends StatelessWidget {
+  const _AccountStatCard({required this.title, required this.value, required this.icon});
+
+  final String title;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: MediaQuery.sizeOf(context).width < 640 ? double.infinity : 230,
+      padding: const EdgeInsets.all(18),
+      decoration: cardDecoration(),
+      child: Row(
+        children: [
+          Icon(icon, color: const Color(0xFF2563EB)),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w700)),
+              const SizedBox(height: 5),
+              Text(value, style: const TextStyle(color: Color(0xFF0F172A), fontSize: 22, fontWeight: FontWeight.w900)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class AccountCard extends StatelessWidget {
+  const AccountCard({super.key, required this.account, required this.isMobile});
+
+  final AdminAccount account;
+  final bool isMobile;
+
+  @override
+  Widget build(BuildContext context) {
+    final statusColor = account.isActive ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
+
+    if (isMobile) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: cardDecoration(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(account.isActive ? Icons.verified_user_outlined : Icons.block_outlined, color: statusColor),
+                const SizedBox(width: 10),
+                Expanded(child: Text(account.name.isEmpty ? '-' : account.name, style: const TextStyle(color: Color(0xFF0F172A), fontSize: 17, fontWeight: FontWeight.w900))),
+              ],
+            ),
+            const SizedBox(height: 12),
+            InfoBlock(title: 'البريد', value: account.email.isEmpty ? '-' : account.email),
+            const SizedBox(height: 10),
+            InfoBlock(title: 'الهاتف', value: account.phone.isEmpty ? '-' : account.phone),
+            const SizedBox(height: 10),
+            Row(children: [Expanded(child: InfoBlock(title: 'الدور', value: account.roleLabel)), const SizedBox(width: 10), Expanded(child: InfoBlock(title: 'الحالة', value: account.statusLabel))]),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: cardDecoration(),
+      child: Row(
+        children: [
+          Icon(account.isActive ? Icons.verified_user_outlined : Icons.block_outlined, color: statusColor),
+          const SizedBox(width: 12),
+          Expanded(flex: 3, child: InfoBlock(title: 'الاسم', value: account.name.isEmpty ? '-' : account.name)),
+          Expanded(child: InfoBlock(title: 'البريد', value: account.email.isEmpty ? '-' : account.email)),
+          Expanded(child: InfoBlock(title: 'الهاتف', value: account.phone.isEmpty ? '-' : account.phone)),
+          Expanded(child: InfoBlock(title: 'الدور', value: account.roleLabel)),
+          Expanded(child: InfoBlock(title: 'الحالة', value: account.statusLabel)),
+        ],
+      ),
+    );
+  }
+}
+
 
 class OrdersDashboardPage extends StatefulWidget {
   const OrdersDashboardPage({super.key});
@@ -5826,6 +6159,10 @@ class _CommercialErrorCard extends StatelessWidget {
     );
   }
 }
+
+
+
+
 
 
 
