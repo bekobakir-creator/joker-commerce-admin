@@ -148,6 +148,24 @@ class AdminApi {
       throw Exception('Create Product API Error ${response.statusCode}: ${response.body}');
     }
   }
+
+  Future<void> updateProduct(int productId, CreateProductRequest request) async {
+    final uri = Uri.parse('$baseUrl/admin/products/$productId?tenant=$tenantCode');
+
+    final response = await http.put(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-Tenant-Code': tenantCode,
+      },
+      body: jsonEncode(request.toJson()),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Update Product API Error ${response.statusCode}: ${response.body}');
+    }
+  }
 }
 
 class AdminCategory {
@@ -379,11 +397,6 @@ class _ProductsDashboardPageState extends State<ProductsDashboardPage> {
     });
   }
 
-  void _soon(String text) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$text راح نكملها بالخطوة الجاية')),
-    );
-  }
 
   Future<void> _openAddProductDialog() async {
     final created = await showDialog<bool>(
@@ -401,6 +414,29 @@ class _ProductsDashboardPageState extends State<ProductsDashboardPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('تمت إضافة المنتج بنجاح')),
+      );
+    }
+  }
+
+  Future<void> _openEditProductDialog(AdminProduct product) async {
+    final updated = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AddProductDialog(
+        api: _api,
+        product: product,
+      ),
+    );
+
+    if (updated == true) {
+      _reload();
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم تحديث المنتج بنجاح')),
       );
     }
   }
@@ -444,7 +480,7 @@ class _ProductsDashboardPageState extends State<ProductsDashboardPage> {
                 search: _search,
                 onReload: _reload,
                 onAdd: _openAddProductDialog,
-                onEdit: (product) => _soon('تعديل المنتج رقم ${product.id}'),
+                onEdit: _openEditProductDialog,
                 isMobile: true,
               ),
             );
@@ -461,7 +497,7 @@ class _ProductsDashboardPageState extends State<ProductsDashboardPage> {
                     search: _search,
                     onReload: _reload,
                     onAdd: _openAddProductDialog,
-                    onEdit: (product) => _soon('تعديل المنتج رقم ${product.id}'),
+                    onEdit: _openEditProductDialog,
                     isMobile: false,
                   ),
                 ),
@@ -1274,9 +1310,11 @@ class AddProductDialog extends StatefulWidget {
   const AddProductDialog({
     super.key,
     required this.api,
+    this.product,
   });
 
   final AdminApi api;
+  final AdminProduct? product;
 
   @override
   State<AddProductDialog> createState() => _AddProductDialogState();
@@ -1323,10 +1361,25 @@ class _AddProductDialogState extends State<AddProductDialog> {
   String? _selectedImageName;
   String? _localPreviewUrl;
 
+  bool get _isEditMode => widget.product != null;
+
   @override
   void initState() {
     super.initState();
     _categoriesFuture = widget.api.fetchCategories();
+
+    final product = widget.product;
+
+    if (product != null) {
+      _nameController.text = product.name;
+      _skuController.text = product.sku ?? '';
+      _priceController.text = product.price.toStringAsFixed(0);
+      _salePriceController.text = product.salePrice?.toStringAsFixed(0) ?? '';
+      _quantityController.text = product.availableQuantity.toString();
+      _imageUrlController.text = product.mainImageUrl ?? '';
+      _isFeatured = product.isFeatured;
+      _hasVariants = product.hasVariants;
+    }
   }
 
   @override
@@ -1493,7 +1546,11 @@ class _AddProductDialogState extends State<AddProductDialog> {
         }).toList(),
       );
 
-      await widget.api.createProduct(request);
+      if (_isEditMode) {
+        await widget.api.updateProduct(widget.product!.id, request);
+      } else {
+        await widget.api.createProduct(request);
+      }
 
       if (!mounted) {
         return;
@@ -1506,7 +1563,7 @@ class _AddProductDialogState extends State<AddProductDialog> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذر إضافة المنتج: $error')),
+        SnackBar(content: Text(_isEditMode ? 'تعذر تحديث المنتج: $error' : 'تعذر إضافة المنتج: $error')), 
       );
 
       setState(() {
@@ -1591,8 +1648,8 @@ class _AddProductDialogState extends State<AddProductDialog> {
         titlePadding: const EdgeInsets.fromLTRB(24, 22, 24, 0),
         contentPadding: const EdgeInsets.fromLTRB(24, 18, 24, 10),
         actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
-        title: const Text(
-          'إضافة منتج جديد',
+        title: Text(
+          _isEditMode ? 'تعديل المنتج' : 'إضافة منتج جديد',
           style: TextStyle(
             color: Color(0xFF0F172A),
             fontWeight: FontWeight.w900,
@@ -1741,6 +1798,24 @@ class _AddProductDialogState extends State<AddProductDialog> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
+                            if (_isEditMode && _hasVariants) ...[
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFFBEB),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: const Color(0xFFFDE68A)),
+                                ),
+                                child: const Text(
+                                  'هذا المنتج يحتوي خيارات. تعديل تفاصيل الخيارات والكميات لكل خيار نكمله بالمرحلة التالية.',
+                                  style: TextStyle(
+                                    color: Color(0xFF92400E),
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                            ],
                             SwitchListTile(
                               value: _hasVariants,
                               onChanged: _isSaving
@@ -1868,7 +1943,7 @@ class _AddProductDialogState extends State<AddProductDialog> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.save_outlined),
-            label: Text(_isSaving ? 'جاري الحفظ...' : 'حفظ المنتج'),
+            label: Text(_isSaving ? 'جاري الحفظ...' : (_isEditMode ? 'حفظ التعديل' : 'حفظ المنتج')),
           ),
         ],
       ),
@@ -2137,6 +2212,8 @@ BoxDecoration cardDecoration() {
     ],
   );
 }
+
+
 
 
 
