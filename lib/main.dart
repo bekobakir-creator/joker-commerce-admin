@@ -290,6 +290,76 @@ class AdminApi {
     );
   }
 
+
+  Future<List<AdminPlan>> fetchPlans() async {
+    final uri = Uri.parse('$baseUrl/admin/plans');
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Plans API Error ${response.statusCode}: ${response.body}');
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    final data = json['data'] as List<dynamic>? ?? [];
+
+    return data
+        .map((item) => AdminPlan.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<AdminFeatureFlag>> fetchFeatureFlags() async {
+    final uri = Uri.parse('$baseUrl/admin/feature-flags?tenant=$tenantCode');
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Feature Flags API Error ${response.statusCode}: ${response.body}');
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    final data = json['features'] as List<dynamic>? ?? [];
+
+    return data
+        .map((item) => AdminFeatureFlag.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<AdminFeatureFlag>> updateFeatureFlags(Map<String, bool> features) async {
+    final uri = Uri.parse('$baseUrl/admin/feature-flags?tenant=$tenantCode');
+
+    final response = await http.patch(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'features': features,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Update Feature Flags API Error ${response.statusCode}: ${response.body}');
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    final data = json['features'] as List<dynamic>? ?? [];
+
+    return data
+        .map((item) => AdminFeatureFlag.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
 }
 
 class AdminCategory {
@@ -740,6 +810,7 @@ class AdminOrder {
         (deliveryCity ?? '').toLowerCase().contains(q) ||
         (deliveryAddress ?? '').toLowerCase().contains(q);
   }
+
 }
 class ProductsDashboardPage extends StatefulWidget {
   const ProductsDashboardPage({super.key});
@@ -1616,6 +1687,22 @@ class AdminSidebar extends StatelessWidget {
   }
 
 
+
+  void _openCommercialSettings(BuildContext context) {
+    if (selectedSection == 'commercial') {
+      if (isDrawer) {
+        Navigator.of(context).pop();
+      }
+      return;
+    }
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => const CommercialSettingsPage(),
+      ),
+    );
+  }
+
   void _openBranding(BuildContext context) {
     if (selectedSection == 'branding') {
       if (isDrawer) {
@@ -1675,6 +1762,12 @@ class AdminSidebar extends StatelessWidget {
               const SidebarItem(Icons.category_outlined, 'الأقسام', false),
               const SidebarItem(Icons.storefront_outlined, 'المخازن والفروع', false),
               const SidebarItem(Icons.local_offer_outlined, 'الخصومات', false),
+              SidebarItem(
+                Icons.workspace_premium_outlined,
+                'الباقات والميزات',
+                selectedSection == 'commercial',
+                onTap: () => _openCommercialSettings(context),
+              ),
               SidebarItem(
                 Icons.settings_outlined,
                 'إعدادات الهوية',
@@ -4610,5 +4703,680 @@ InputDecoration _inputDecoration(String label, IconData icon) {
       borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
     ),
   );
+}
+
+class AdminPlan {
+  const AdminPlan({
+    required this.id,
+    required this.name,
+    required this.code,
+    required this.description,
+    required this.monthlyPrice,
+    required this.setupPrice,
+    required this.maxBranches,
+    required this.maxWarehouses,
+    required this.maxUsers,
+    required this.maxProducts,
+    required this.isActive,
+  });
+
+  final int id;
+  final String name;
+  final String code;
+  final String? description;
+  final double monthlyPrice;
+  final double setupPrice;
+  final int? maxBranches;
+  final int? maxWarehouses;
+  final int? maxUsers;
+  final int? maxProducts;
+  final bool isActive;
+
+  factory AdminPlan.fromJson(Map<String, dynamic> json) {
+    return AdminPlan(
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      name: json['name']?.toString() ?? '',
+      code: json['code']?.toString() ?? '',
+      description: json['description']?.toString(),
+      monthlyPrice: (json['monthly_price'] as num?)?.toDouble() ?? 0,
+      setupPrice: (json['setup_price'] as num?)?.toDouble() ?? 0,
+      maxBranches: (json['max_branches'] as num?)?.toInt(),
+      maxWarehouses: (json['max_warehouses'] as num?)?.toInt(),
+      maxUsers: (json['max_users'] as num?)?.toInt(),
+      maxProducts: (json['max_products'] as num?)?.toInt(),
+      isActive: json['is_active'] == true,
+    );
+  }
+}
+
+class AdminFeatureFlag {
+  const AdminFeatureFlag({
+    required this.id,
+    required this.code,
+    required this.name,
+    required this.description,
+    required this.isActive,
+    required this.isEnabled,
+  });
+
+  final int id;
+  final String code;
+  final String name;
+  final String? description;
+  final bool isActive;
+  final bool isEnabled;
+
+  factory AdminFeatureFlag.fromJson(Map<String, dynamic> json) {
+    return AdminFeatureFlag(
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      code: json['code']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      description: json['description']?.toString(),
+      isActive: json['is_active'] == true,
+      isEnabled: json['is_enabled'] == true,
+    );
+  }
+
+  AdminFeatureFlag copyWith({
+    bool? isEnabled,
+  }) {
+    return AdminFeatureFlag(
+      id: id,
+      code: code,
+      name: name,
+      description: description,
+      isActive: isActive,
+      isEnabled: isEnabled ?? this.isEnabled,
+    );
+  }
+}
+
+class CommercialSettingsPage extends StatefulWidget {
+  const CommercialSettingsPage({super.key});
+
+  @override
+  State<CommercialSettingsPage> createState() => _CommercialSettingsPageState();
+}
+
+class _CommercialSettingsPageState extends State<CommercialSettingsPage> {
+  final AdminApi _api = AdminApi();
+
+  late Future<_CommercialSettingsData> _future;
+  List<AdminFeatureFlag> _features = [];
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
+
+  Future<_CommercialSettingsData> _load() async {
+    final plans = await _api.fetchPlans();
+    final features = await _api.fetchFeatureFlags();
+    _features = features;
+
+    return _CommercialSettingsData(
+      plans: plans,
+      features: features,
+    );
+  }
+
+  Future<void> _refresh() async {
+    setState(() {
+      _future = _load();
+    });
+    await _future;
+  }
+
+  Future<void> _save() async {
+    setState(() {
+      _saving = true;
+    });
+
+    try {
+      final payload = {
+        for (final feature in _features) feature.code: feature.isEnabled,
+      };
+
+      final updated = await _api.updateFeatureFlags(payload);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _features = updated;
+        _future = Future.value(
+          _CommercialSettingsData(
+            plans: [],
+            features: updated,
+          ),
+        );
+      });
+
+      await _refresh();
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم حفظ إعدادات الميزات بنجاح')),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('فشل الحفظ: $error')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+        });
+      }
+    }
+  }
+
+  void _toggleFeature(AdminFeatureFlag feature, bool value) {
+    setState(() {
+      _features = _features
+          .map(
+            (item) => item.code == feature.code
+                ? item.copyWith(isEnabled: value)
+                : item,
+          )
+          .toList();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isMobile = MediaQuery.sizeOf(context).width < 900;
+
+    final content = Scaffold(
+      backgroundColor: const Color(0xFFF1F5F9),
+      drawer: isMobile
+          ? const Drawer(
+              child: AdminSidebar(
+                isDrawer: true,
+                selectedSection: 'commercial',
+              ),
+            )
+          : null,
+      appBar: isMobile
+          ? AppBar(
+              title: const Text('الباقات والميزات'),
+              backgroundColor: const Color(0xFF0F172A),
+              foregroundColor: Colors.white,
+            )
+          : null,
+      body: Row(
+        children: [
+          if (!isMobile)
+            const AdminSidebar(
+              selectedSection: 'commercial',
+            ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _refresh,
+              child: FutureBuilder<_CommercialSettingsData>(
+                future: _future,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting && _features.isEmpty) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (snapshot.hasError) {
+                    return ListView(
+                      padding: const EdgeInsets.all(24),
+                      children: [
+                        _CommercialHeader(isMobile: isMobile),
+                        const SizedBox(height: 20),
+                        _CommercialErrorCard(
+                          error: snapshot.error.toString(),
+                          onRetry: _refresh,
+                        ),
+                      ],
+                    );
+                  }
+
+                  final data = snapshot.data;
+                  final plans = data?.plans ?? [];
+
+                  return ListView(
+                    padding: EdgeInsets.all(isMobile ? 16 : 28),
+                    children: [
+                      _CommercialHeader(isMobile: isMobile),
+                      const SizedBox(height: 22),
+                      _PlansSection(plans: plans),
+                      const SizedBox(height: 22),
+                      _FeatureFlagsSection(
+                        features: _features,
+                        saving: _saving,
+                        onChanged: _toggleFeature,
+                        onSave: _save,
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: content,
+    );
+  }
+}
+
+class _CommercialSettingsData {
+  const _CommercialSettingsData({
+    required this.plans,
+    required this.features,
+  });
+
+  final List<AdminPlan> plans;
+  final List<AdminFeatureFlag> features;
+}
+
+class _CommercialHeader extends StatelessWidget {
+  const _CommercialHeader({
+    required this.isMobile,
+  });
+
+  final bool isMobile;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(isMobile ? 18 : 24),
+      decoration: cardDecoration(),
+      child: Row(
+        children: [
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F172A),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: const Icon(
+              Icons.workspace_premium_outlined,
+              color: Colors.white,
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'الباقات والميزات',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                SizedBox(height: 6),
+                Text(
+                  'إعدادات داخلية لصاحب المنصة فقط: تحديد الباقات وتفعيل الميزات لكل Tenant.',
+                  style: TextStyle(
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlansSection extends StatelessWidget {
+  const _PlansSection({
+    required this.plans,
+  });
+
+  final List<AdminPlan> plans;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'الباقات المتوفرة',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF0F172A),
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (plans.isEmpty)
+            const Text(
+              'لا توجد باقات حالياً.',
+              style: TextStyle(
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w700,
+              ),
+            )
+          else
+            Wrap(
+              spacing: 14,
+              runSpacing: 14,
+              children: plans.map((plan) => _PlanCard(plan: plan)).toList(),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlanCard extends StatelessWidget {
+  const _PlanCard({
+    required this.plan,
+  });
+
+  final AdminPlan plan;
+
+  String _limitText(int? value) {
+    return value == null ? 'غير محدود' : value.toString();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 310,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  plan.name,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+              ),
+              Chip(
+                label: Text(plan.isActive ? 'فعالة' : 'مطفية'),
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            plan.description ?? 'بدون وصف',
+            style: const TextStyle(
+              color: Color(0xFF64748B),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            '${plan.monthlyPrice.toStringAsFixed(0)} د.ع / شهرياً',
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF0F172A),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'إعداد: ${plan.setupPrice.toStringAsFixed(0)} د.ع',
+            style: const TextStyle(
+              color: Color(0xFF64748B),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const Divider(height: 24),
+          _PlanLimitRow(label: 'الفروع', value: _limitText(plan.maxBranches)),
+          _PlanLimitRow(label: 'المخازن', value: _limitText(plan.maxWarehouses)),
+          _PlanLimitRow(label: 'المستخدمين', value: _limitText(plan.maxUsers)),
+          _PlanLimitRow(label: 'المنتجات', value: _limitText(plan.maxProducts)),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlanLimitRow extends StatelessWidget {
+  const _PlanLimitRow({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 7),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Color(0xFF0F172A),
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FeatureFlagsSection extends StatelessWidget {
+  const _FeatureFlagsSection({
+    required this.features,
+    required this.saving,
+    required this.onChanged,
+    required this.onSave,
+  });
+
+  final List<AdminFeatureFlag> features;
+  final bool saving;
+  final void Function(AdminFeatureFlag feature, bool value) onChanged;
+  final VoidCallback onSave;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'ميزات الـ Tenant الحالي',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+              ),
+              FilledButton.icon(
+                onPressed: saving ? null : onSave,
+                icon: saving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.save_outlined),
+                label: Text(saving ? 'جاري الحفظ...' : 'حفظ الميزات'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (features.isEmpty)
+            const Text(
+              'لا توجد ميزات حالياً.',
+              style: TextStyle(
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w700,
+              ),
+            )
+          else
+            Column(
+              children: features
+                  .map(
+                    (feature) => _FeatureFlagTile(
+                      feature: feature,
+                      onChanged: (value) => onChanged(feature, value),
+                    ),
+                  )
+                  .toList(),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FeatureFlagTile extends StatelessWidget {
+  const _FeatureFlagTile({
+    required this.feature,
+    required this.onChanged,
+  });
+
+  final AdminFeatureFlag feature;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: feature.isEnabled ? const Color(0xFFEFF6FF) : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: feature.isEnabled ? const Color(0xFFBFDBFE) : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            feature.isEnabled ? Icons.check_circle_outline : Icons.radio_button_unchecked,
+            color: feature.isEnabled ? const Color(0xFF2563EB) : const Color(0xFF94A3B8),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  feature.name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  feature.description ?? feature.code,
+                  style: const TextStyle(
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: feature.isEnabled,
+            onChanged: feature.isActive ? onChanged : null,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CommercialErrorCard extends StatelessWidget {
+  const _CommercialErrorCard({
+    required this.error,
+    required this.onRetry,
+  });
+
+  final String error;
+  final Future<void> Function() onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'حدث خطأ أثناء تحميل إعدادات الباقات والميزات',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF991B1B),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            error,
+            style: const TextStyle(
+              color: Color(0xFF64748B),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh),
+            label: const Text('إعادة المحاولة'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
