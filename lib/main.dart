@@ -51,6 +51,41 @@ class AuthSession {
 
   static void clear() {
     html.window.localStorage.remove(_tokenKey);
+    CurrentAdminSession.clear();
+  }
+}
+
+class CurrentAdminSession {
+  static Map<String, dynamic>? _user;
+
+  static Map<String, dynamic>? get user => _user;
+
+  static String get role => _user?['role']?.toString() ?? '';
+
+  static bool get isSuperAdmin => role == 'super_admin';
+  static bool get isTenantAdmin => role == 'tenant_admin';
+  static bool get isManager => role == 'manager';
+  static bool get isOrdersStaff => role == 'orders_staff';
+  static bool get isInventoryStaff => role == 'inventory_staff';
+
+  static bool get canViewProducts => isSuperAdmin || isTenantAdmin || isManager || isInventoryStaff;
+  static bool get canViewOrders => isSuperAdmin || isTenantAdmin || isManager || isOrdersStaff;
+  static bool get canViewAccounts => isSuperAdmin || isTenantAdmin;
+  static bool get canViewBranding => isSuperAdmin || isTenantAdmin;
+  static bool get canViewCommercial => isSuperAdmin;
+
+  static void saveFromPayload(Map<String, dynamic> payload) {
+    final rawUser = payload['user'];
+    if (rawUser is Map<String, dynamic>) {
+      _user = rawUser;
+      return;
+    }
+
+    _user = payload;
+  }
+
+  static void clear() {
+    _user = null;
   }
 }
 
@@ -332,6 +367,8 @@ class AdminApi {
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
+    CurrentAdminSession.saveFromPayload(json);
+
     final token = json['access_token']?.toString() ?? '';
 
     if (token.isEmpty) {
@@ -355,7 +392,9 @@ class AdminApi {
       throw Exception('Me API Error ${response.statusCode}: ${response.body}');
     }
 
-    return jsonDecode(response.body) as Map<String, dynamic>;
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    CurrentAdminSession.saveFromPayload(json);
+    return json;
   }
 
   Future<void> logout() async {
@@ -2334,33 +2373,38 @@ class AdminSidebar extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 30),
+              if (CurrentAdminSession.canViewProducts)
               SidebarItem(
                 Icons.inventory_2_outlined,
                 'المنتجات',
                 selectedSection == 'products',
                 onTap: () => _openProducts(context),
               ),
+              if (CurrentAdminSession.canViewOrders)
               SidebarItem(
                 Icons.receipt_long_outlined,
                 'الطلبات',
                 selectedSection == 'orders',
                 onTap: () => _openOrders(context),
               ),
+              if (CurrentAdminSession.canViewAccounts)
               SidebarItem(
                 Icons.manage_accounts_outlined,
                 'الحسابات',
                 selectedSection == 'accounts',
                 onTap: () => _openAccounts(context),
               ),
-              const SidebarItem(Icons.category_outlined, 'الأقسام', false),
-              const SidebarItem(Icons.storefront_outlined, 'المخازن والفروع', false),
-              const SidebarItem(Icons.local_offer_outlined, 'الخصومات', false),
+              if (CurrentAdminSession.canViewProducts) const SidebarItem(Icons.category_outlined, 'الأقسام', false),
+              if (CurrentAdminSession.canViewProducts) const SidebarItem(Icons.storefront_outlined, 'المخازن والفروع', false),
+              if (CurrentAdminSession.canViewProducts || CurrentAdminSession.canViewOrders) const SidebarItem(Icons.local_offer_outlined, 'الخصومات', false),
+              if (CurrentAdminSession.canViewCommercial)
               SidebarItem(
                 Icons.workspace_premium_outlined,
                 'الباقات والميزات',
                 selectedSection == 'commercial',
                 onTap: () => _openCommercialSettings(context),
               ),
+              if (CurrentAdminSession.canViewBranding)
               SidebarItem(
                 Icons.settings_outlined,
                 'إعدادات الهوية',
