@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:typed_data';
 // ignore: deprecated_member_use, avoid_web_libraries_in_flutter
 import 'dart:html' as html;
@@ -126,8 +126,8 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final AdminApi _api = AdminApi();
-  final TextEditingController _emailController = TextEditingController(
-    text: 'admin@joker-commerce.local',
+  final TextEditingController _phoneController = TextEditingController(
+    text: '07700000000',
   );
   final TextEditingController _passwordController = TextEditingController(
     text: 'Admin@123456',
@@ -138,7 +138,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -151,7 +151,7 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       await _api.login(
-        email: _emailController.text.trim(),
+        phone: _phoneController.text.trim(),
         password: _passwordController.text,
       );
 
@@ -220,12 +220,12 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 24),
                     TextField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
+                      controller: _phoneController,
+                      keyboardType: TextInputType.phone,
                       decoration: const InputDecoration(
-                        labelText: 'البريد الإلكتروني',
+                        labelText: 'رقم الهاتف',
                         border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.email_outlined),
+                        prefixIcon: Icon(Icons.phone_outlined),
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -310,7 +310,7 @@ class AdminApi {
   }
 
   Future<Map<String, dynamic>> login({
-    required String email,
+    required String phone,
     required String password,
   }) async {
     final uri = Uri.parse('$baseUrl/auth/login');
@@ -322,7 +322,7 @@ class AdminApi {
         'Content-Type': 'application/json',
       },
       body: jsonEncode({
-        'email': email,
+        'phone': phone,
         'password': password,
       }),
     );
