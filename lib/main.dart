@@ -2806,7 +2806,7 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
                     actions: [IconButton(onPressed: _reload, icon: const Icon(Icons.refresh))],
                   )
                 : null,
-            floatingActionButton: FloatingActionButton.extended(onPressed: _openCreateAccountDialog, icon: const Icon(Icons.add), label: const Text('إضافة حساب')),
+            floatingActionButton: CurrentAdminSession.canManageAccounts ? FloatingActionButton.extended(onPressed: _openCreateAccountDialog, icon: const Icon(Icons.add), label: const Text('إضافة حساب')) : null,
             body: Row(
               children: [
                 if (!isMobile) const AdminSidebar(selectedSection: 'accounts'),
@@ -2981,7 +2981,7 @@ class AccountCard extends StatelessWidget {
             const SizedBox(height: 10),
             Row(children: [Expanded(child: InfoBlock(title: 'الدور', value: account.roleLabel)), const SizedBox(width: 10), Expanded(child: InfoBlock(title: 'الحالة', value: account.statusLabel))]),
             const SizedBox(height: 12),
-            Wrap(spacing: 8, runSpacing: 8, children: [OutlinedButton.icon(onPressed: onEdit, icon: const Icon(Icons.edit_outlined), label: const Text('تعديل')), OutlinedButton.icon(onPressed: onChangePassword, icon: const Icon(Icons.lock_reset_outlined), label: const Text('كلمة المرور')), OutlinedButton.icon(onPressed: onToggleStatus, icon: Icon(account.isActive ? Icons.block_outlined : Icons.check_circle_outline), label: Text(account.isActive ? 'تعطيل' : 'تفعيل'))]),
+            if (CurrentAdminSession.canManageAccounts) Wrap(spacing: 8, runSpacing: 8, children: [OutlinedButton.icon(onPressed: onEdit, icon: const Icon(Icons.edit_outlined), label: const Text('تعديل')), OutlinedButton.icon(onPressed: onChangePassword, icon: const Icon(Icons.lock_reset_outlined), label: const Text('كلمة المرور')), OutlinedButton.icon(onPressed: onToggleStatus, icon: Icon(account.isActive ? Icons.block_outlined : Icons.check_circle_outline), label: Text(account.isActive ? 'تعطيل' : 'تفعيل'))]),
           ],
         ),
       );
@@ -3000,7 +3000,7 @@ class AccountCard extends StatelessWidget {
           Expanded(child: InfoBlock(title: 'الدور', value: account.roleLabel)),
           Expanded(child: InfoBlock(title: 'الحالة', value: account.statusLabel)),
           const SizedBox(width: 12),
-          Wrap(spacing: 8, runSpacing: 8, children: [OutlinedButton.icon(onPressed: onEdit, icon: const Icon(Icons.edit_outlined), label: const Text('تعديل')), OutlinedButton.icon(onPressed: onChangePassword, icon: const Icon(Icons.lock_reset_outlined), label: const Text('كلمة المرور')), OutlinedButton.icon(onPressed: onToggleStatus, icon: Icon(account.isActive ? Icons.block_outlined : Icons.check_circle_outline), label: Text(account.isActive ? 'تعطيل' : 'تفعيل'))]),
+          if (CurrentAdminSession.canManageAccounts) Wrap(spacing: 8, runSpacing: 8, children: [OutlinedButton.icon(onPressed: onEdit, icon: const Icon(Icons.edit_outlined), label: const Text('تعديل')), OutlinedButton.icon(onPressed: onChangePassword, icon: const Icon(Icons.lock_reset_outlined), label: const Text('كلمة المرور')), OutlinedButton.icon(onPressed: onToggleStatus, icon: Icon(account.isActive ? Icons.block_outlined : Icons.check_circle_outline), label: Text(account.isActive ? 'تعطيل' : 'تفعيل'))]),
         ],
       ),
     );
