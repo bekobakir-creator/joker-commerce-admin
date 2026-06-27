@@ -525,6 +525,26 @@ class AdminApi {
         .replaceFirst('http://127.0.0.1', apiOrigin);
   }
 
+  Future<List<AdminTenant>> fetchTenants() async {
+    final uri = Uri.parse("$baseUrl/admin/tenants");
+
+    final response = await http.get(
+      uri,
+      headers: _jsonHeaders,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception("Tenants API Error ${response.statusCode}: ${response.body}");
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    final list = json["data"] as List<dynamic>? ?? [];
+
+    return list
+        .map((item) => AdminTenant.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<List<AdminAccount>> fetchAccounts() async {
     final uri = Uri.parse('$baseUrl/admin/accounts');
 
@@ -602,17 +622,24 @@ class AdminApi {
     required String name,
     required String phone,
     required String role,
+    int? tenantId,
   }) async {
     final uri = Uri.parse('$baseUrl/admin/accounts/$accountId');
+
+    final body = <String, dynamic>{
+      'name': name,
+      'phone': phone,
+      'role': role,
+    };
+
+    if (tenantId != null) {
+      body['tenant_id'] = tenantId;
+    }
 
     final response = await http.patch(
       uri,
       headers: _jsonHeaders,
-      body: jsonEncode({
-        'name': name,
-        'phone': phone,
-        'role': role,
-      }),
+      body: jsonEncode(body),
     );
 
     if (response.statusCode != 200) {
@@ -1317,6 +1344,34 @@ class AdminOrder {
   }
 
 }
+class AdminTenant {
+  const AdminTenant({
+    required this.id,
+    required this.name,
+    required this.code,
+    required this.status,
+    this.businessType,
+  });
+
+  final int id;
+  final String name;
+  final String code;
+  final String status;
+  final String? businessType;
+
+  factory AdminTenant.fromJson(Map<String, dynamic> json) {
+    return AdminTenant(
+      id: (json["id"] as num?)?.toInt() ?? 0,
+      name: json["name"]?.toString() ?? "",
+      code: json["code"]?.toString() ?? "",
+      status: json["status"]?.toString() ?? "",
+      businessType: json["business_type"]?.toString(),
+    );
+  }
+
+  String get label => "$name ($code)";
+}
+
 class AdminAccount {
   const AdminAccount({
     required this.id,
@@ -2561,6 +2616,9 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
     final nameController = TextEditingController(text: account.name);
     final phoneController = TextEditingController(text: account.phone);
     var role = account.role == 'super_admin' ? 'manager' : account.role;
+    final tenants = await _api.fetchTenants();
+    if (!mounted) return;
+    int? selectedTenantId = account.tenantId ?? (tenants.isNotEmpty ? tenants.first.id : null);
     var saving = false;
 
     try {
@@ -2581,6 +2639,8 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
                         TextFormField(controller: nameController, decoration: const InputDecoration(labelText: 'الاسم'), validator: (value) => value == null || value.trim().isEmpty ? 'مطلوب' : null),
                         const SizedBox(height: 12),
                         TextFormField(controller: phoneController, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'رقم الهاتف'), validator: (value) => value == null || value.trim().isEmpty ? 'مطلوب' : null),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<int>(value: selectedTenantId, decoration: const InputDecoration(labelText: 'المتجر'), items: tenants.map((tenant) => DropdownMenuItem<int>(value: tenant.id, child: Text(tenant.label))).toList(), validator: (value) => value == null ? 'اختر المتجر' : null, onChanged: saving ? null : (value) => setDialogState(() => selectedTenantId = value)),
                         const SizedBox(height: 12),
                         DropdownButtonFormField<String>(
                           value: role,
@@ -2606,7 +2666,7 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
                       final messenger = ScaffoldMessenger.of(context);
                       setDialogState(() => saving = true);
                       try {
-                        await _api.updateAccount(accountId: account.id, name: nameController.text.trim(), phone: phoneController.text.trim(), role: role);
+                        await _api.updateAccount(accountId: account.id, name: nameController.text.trim(), phone: phoneController.text.trim(), role: role, tenantId: selectedTenantId);
                         if (!mounted) return;
                         navigator.pop();
                         messenger.showSnackBar(const SnackBar(content: Text('تم تعديل الحساب بنجاح')));
@@ -2702,6 +2762,9 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
     final phoneController = TextEditingController();
     final passwordController = TextEditingController();
     var role = 'manager';
+    final tenants = await _api.fetchTenants();
+    if (!mounted) return;
+    int? selectedTenantId = tenants.isNotEmpty ? tenants.first.id : null;
     var saving = false;
 
     try {
@@ -2725,6 +2788,8 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
                           TextFormField(controller: phoneController, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'رقم الهاتف'), validator: (value) => value == null || value.trim().isEmpty ? 'مطلوب' : null),
                           const SizedBox(height: 12),
                           TextFormField(controller: passwordController, obscureText: true, decoration: const InputDecoration(labelText: 'كلمة المرور'), validator: (value) => value == null || value.trim().length < 8 ? '8 أحرف على الأقل' : null),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<int>(value: selectedTenantId, decoration: const InputDecoration(labelText: 'المتجر'), items: tenants.map((tenant) => DropdownMenuItem<int>(value: tenant.id, child: Text(tenant.label))).toList(), validator: (value) => value == null ? 'اختر المتجر' : null, onChanged: saving ? null : (value) => setDialogState(() => selectedTenantId = value)),
                           const SizedBox(height: 12),
                           DropdownButtonFormField<String>(
                             value: role,
@@ -2756,7 +2821,7 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
                       setDialogState(() => saving = true);
 
                       try {
-                        await _api.createAccount(name: nameController.text.trim(), phone: phoneController.text.trim(), password: passwordController.text, role: role, tenantId: 1);
+                        await _api.createAccount(name: nameController.text.trim(), phone: phoneController.text.trim(), password: passwordController.text, role: role, tenantId: selectedTenantId);
                         if (!mounted) {
                           return;
                         }
