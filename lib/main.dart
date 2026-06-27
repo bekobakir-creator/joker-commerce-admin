@@ -5239,6 +5239,10 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
   }
 
   Future<void> _save() async {
+    if (!CurrentAdminSession.canManageBranding) {
+      return;
+    }
+
     if (_appNameController.text.trim().isEmpty || _businessNameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('اسم التطبيق واسم النشاط مطلوبان')),
@@ -5744,7 +5748,7 @@ class _BrandingSettingsBody extends StatelessWidget {
               const SizedBox(height: 22),
               Align(
                 alignment: Alignment.centerLeft,
-                child: FilledButton.icon(
+                child: CurrentAdminSession.canManageBranding ? FilledButton.icon(
                   onPressed: isSaving ? null : onSave,
                   icon: isSaving
                       ? const SizedBox(
@@ -5754,7 +5758,7 @@ class _BrandingSettingsBody extends StatelessWidget {
                         )
                       : const Icon(Icons.save_outlined),
                   label: Text(isSaving ? 'جاري الحفظ...' : 'حفظ الإعدادات'),
-                ),
+                ) : const SizedBox.shrink(),
               ),
             ],
           );
@@ -5785,7 +5789,7 @@ class _BrandingHeader extends StatelessWidget {
         icon: const Icon(Icons.refresh),
         label: const Text('تحديث'),
       ),
-      FilledButton.icon(
+      if (CurrentAdminSession.canManageBranding) FilledButton.icon(
         onPressed: isSaving ? null : onSave,
         icon: const Icon(Icons.save_outlined),
         label: const Text('حفظ'),
@@ -6053,6 +6057,10 @@ class _CommercialSettingsPageState extends State<CommercialSettingsPage> {
   }
 
   Future<void> _save() async {
+    if (!CurrentAdminSession.canManageCommercial) {
+      return;
+    }
+
     setState(() {
       _saving = true;
     });
@@ -6463,7 +6471,7 @@ class _FeatureFlagsSection extends StatelessWidget {
                   ),
                 ),
               ),
-              FilledButton.icon(
+              if (CurrentAdminSession.canManageCommercial) FilledButton.icon(
                 onPressed: saving ? null : onSave,
                 icon: saving
                     ? const SizedBox(
@@ -6491,6 +6499,7 @@ class _FeatureFlagsSection extends StatelessWidget {
                   .map(
                     (feature) => _FeatureFlagTile(
                       feature: feature,
+                      canManage: CurrentAdminSession.canManageCommercial,
                       onChanged: (value) => onChanged(feature, value),
                     ),
                   )
@@ -6505,10 +6514,12 @@ class _FeatureFlagsSection extends StatelessWidget {
 class _FeatureFlagTile extends StatelessWidget {
   const _FeatureFlagTile({
     required this.feature,
+    required this.canManage,
     required this.onChanged,
   });
 
   final AdminFeatureFlag feature;
+  final bool canManage;
   final ValueChanged<bool> onChanged;
 
   @override
@@ -6554,7 +6565,7 @@ class _FeatureFlagTile extends StatelessWidget {
           ),
           Switch(
             value: feature.isEnabled,
-            onChanged: feature.isActive ? onChanged : null,
+            onChanged: feature.isActive && canManage ? onChanged : null,
           ),
         ],
       ),
