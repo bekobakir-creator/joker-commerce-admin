@@ -519,6 +519,22 @@ class AdminApi {
     }
   }
 
+  Future<void> updateAccountStatus(int accountId, bool isActive) async {
+    final uri = Uri.parse('$baseUrl/admin/accounts/$accountId/status');
+
+    final response = await http.patch(
+      uri,
+      headers: _jsonHeaders,
+      body: jsonEncode({
+        'is_active': isActive,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Update Account Status API Error ${response.statusCode}: ${response.body}');
+    }
+  }
+
   Future<void> createProduct(CreateProductRequest request) async {
     final uri = Uri.parse('$baseUrl/admin/products?tenant=$tenantCode');
 
@@ -2411,6 +2427,18 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
   final AdminApi _api = AdminApi();
   late Future<List<AdminAccount>> _future;
 
+  Future<void> _toggleAccountStatus(AdminAccount account) async {
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      await _api.updateAccountStatus(account.id, !account.isActive);
+      messenger.showSnackBar(SnackBar(content: Text(account.isActive ? 'تم تعطيل الحساب' : 'تم تفعيل الحساب')));
+      await _reload();
+    } catch (error) {
+      messenger.showSnackBar(SnackBar(content: Text(error.toString())));
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -2590,7 +2618,7 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
                                   child: const Text('لا توجد حسابات إدارية بعد.', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w800)),
                                 )
                               else
-                                ...accounts.map((account) => Padding(padding: const EdgeInsets.only(bottom: 12), child: AccountCard(account: account, isMobile: isMobile))),
+                                ...accounts.map((account) => Padding(padding: const EdgeInsets.only(bottom: 12), child: AccountCard(account: account, isMobile: isMobile, onToggleStatus: () => _toggleAccountStatus(account)))),
                               const SizedBox(height: 36),
                             ],
                           );
@@ -2672,10 +2700,11 @@ class _AccountStatCard extends StatelessWidget {
 }
 
 class AccountCard extends StatelessWidget {
-  const AccountCard({super.key, required this.account, required this.isMobile});
+  const AccountCard({super.key, required this.account, required this.isMobile, required this.onToggleStatus});
 
   final AdminAccount account;
   final bool isMobile;
+  final VoidCallback onToggleStatus;
 
   @override
   Widget build(BuildContext context) {
@@ -2701,6 +2730,8 @@ class AccountCard extends StatelessWidget {
             InfoBlock(title: 'الهاتف', value: account.phone.isEmpty ? '-' : account.phone),
             const SizedBox(height: 10),
             Row(children: [Expanded(child: InfoBlock(title: 'الدور', value: account.roleLabel)), const SizedBox(width: 10), Expanded(child: InfoBlock(title: 'الحالة', value: account.statusLabel))]),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(onPressed: onToggleStatus, icon: Icon(account.isActive ? Icons.block_outlined : Icons.check_circle_outline), label: Text(account.isActive ? 'تعطيل' : 'تفعيل')),
           ],
         ),
       );
@@ -2718,6 +2749,8 @@ class AccountCard extends StatelessWidget {
           Expanded(child: InfoBlock(title: 'الهاتف', value: account.phone.isEmpty ? '-' : account.phone)),
           Expanded(child: InfoBlock(title: 'الدور', value: account.roleLabel)),
           Expanded(child: InfoBlock(title: 'الحالة', value: account.statusLabel)),
+          const SizedBox(width: 12),
+          OutlinedButton.icon(onPressed: onToggleStatus, icon: Icon(account.isActive ? Icons.block_outlined : Icons.check_circle_outline), label: Text(account.isActive ? 'تعطيل' : 'تفعيل')),
         ],
       ),
     );
