@@ -74,6 +74,24 @@ class CurrentAdminSession {
   static bool get canViewBranding => isSuperAdmin || isTenantAdmin;
   static bool get canViewCommercial => isSuperAdmin;
 
+  static Widget defaultHomePage() {
+    if (canViewProducts) {
+      return const ProductsDashboardPage();
+    }
+
+    if (canViewOrders) {
+      return const OrdersDashboardPage();
+    }
+
+    if (canViewAccounts) {
+      return const AccountsDashboardPage();
+    }
+
+    return const LoginPage(onLoggedIn: _noop);
+  }
+
+  static void _noop() {}
+
   static void saveFromPayload(Map<String, dynamic> payload) {
     final rawUser = payload['user'];
     if (rawUser is Map<String, dynamic>) {
@@ -138,7 +156,7 @@ class _AuthGateState extends State<AuthGate> {
         }
 
         if (snapshot.data == true) {
-          return const ProductsDashboardPage();
+          return CurrentAdminSession.defaultHomePage();
         }
 
         return LoginPage(onLoggedIn: _onLoggedIn);
@@ -1433,6 +1451,10 @@ class _ProductsDashboardPageState extends State<ProductsDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (!CurrentAdminSession.canViewProducts) {
+      return CurrentAdminSession.defaultHomePage();
+    }
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: LayoutBuilder(
@@ -2752,6 +2774,10 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (!CurrentAdminSession.canViewAccounts) {
+      return CurrentAdminSession.defaultHomePage();
+    }
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: LayoutBuilder(
@@ -3073,6 +3099,10 @@ class _OrdersDashboardPageState extends State<OrdersDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (!CurrentAdminSession.canViewOrders) {
+      return CurrentAdminSession.defaultHomePage();
+    }
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: LayoutBuilder(
@@ -5276,6 +5306,10 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (!CurrentAdminSession.canViewBranding) {
+      return CurrentAdminSession.defaultHomePage();
+    }
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: LayoutBuilder(
@@ -6066,6 +6100,10 @@ class _CommercialSettingsPageState extends State<CommercialSettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (!CurrentAdminSession.canViewCommercial) {
+      return CurrentAdminSession.defaultHomePage();
+    }
+
     final isMobile = MediaQuery.sizeOf(context).width < 900;
 
     final content = Scaffold(
