@@ -1346,6 +1346,65 @@ class DashboardBody extends StatelessWidget {
                 final allProducts = snapshot.data ?? [];
                 final products = allProducts.where((p) => p.matches(search)).toList();
 
+                                if (isMobile) {
+                  return RefreshIndicator(
+                    onRefresh: () async => onReload(),
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: EdgeInsets.zero,
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(padding, 0, padding, 14),
+                          child: SummaryGrid(
+                            products: allProducts,
+                            isMobile: true,
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(padding, 0, padding, 10),
+                          child: Row(
+                            children: [
+                              const Text(
+                                'قائمة المنتجات',
+                                style: TextStyle(
+                                  color: Color(0xFF0F172A),
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const Spacer(),
+                              Text(
+                                '${products.length} منتج',
+                                style: const TextStyle(
+                                  color: Color(0xFF64748B),
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (products.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 20),
+                            child: EmptyProducts(),
+                          )
+                        else
+                          ...products.map(
+                            (product) => Padding(
+                              padding: EdgeInsets.fromLTRB(padding, 0, padding, 12),
+                              child: MobileProductCard(
+                                product: product,
+                                onEdit: () => onEdit(product),
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 36),
+                      ],
+                    ),
+                  );
+                }
+
                 return Column(
                   children: [
                     Padding(
@@ -2431,6 +2490,65 @@ class OrdersDashboardBody extends StatelessWidget {
                 final allOrders = snapshot.data ?? [];
                 final orders = filterOrders(allOrders);
 
+                                if (isMobile) {
+                  return RefreshIndicator(
+                    onRefresh: () async => onReload(),
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: EdgeInsets.zero,
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(padding, 0, padding, 14),
+                          child: OrdersSummaryGrid(
+                            orders: allOrders,
+                            isMobile: true,
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(padding, 0, padding, 10),
+                          child: Row(
+                            children: [
+                              const Text(
+                                'قائمة الطلبات',
+                                style: TextStyle(
+                                  color: Color(0xFF0F172A),
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const Spacer(),
+                              Text(
+                                '${orders.length} طلب',
+                                style: const TextStyle(
+                                  color: Color(0xFF64748B),
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (orders.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 20),
+                            child: EmptyOrders(),
+                          )
+                        else
+                          ...orders.map(
+                            (order) => Padding(
+                              padding: EdgeInsets.fromLTRB(padding, 0, padding, 12),
+                              child: MobileOrderCard(
+                                order: order,
+                                onOpenDetails: () => onOpenDetails(order),
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 36),
+                      ],
+                    ),
+                  );
+                }
+
                 return Column(
                   children: [
                     Padding(
@@ -2959,16 +3077,15 @@ class _OrderDetailsDialogState extends State<OrderDetailsDialog> {
   @override
   Widget build(BuildContext context) {
     final order = widget.order;
-
     return Directionality(
       textDirection: TextDirection.rtl,
       child: AlertDialog(
         backgroundColor: const Color(0xFFF8FAFC),
         surfaceTintColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(18),
-        titlePadding: const EdgeInsets.fromLTRB(24, 22, 24, 0),
-        contentPadding: const EdgeInsets.fromLTRB(24, 18, 24, 10),
-        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+        insetPadding: EdgeInsets.all(MediaQuery.sizeOf(context).width < 640 ? 8 : 18),
+        titlePadding: EdgeInsets.fromLTRB(MediaQuery.sizeOf(context).width < 640 ? 14 : 24, 20, MediaQuery.sizeOf(context).width < 640 ? 14 : 24, 0),
+        contentPadding: EdgeInsets.fromLTRB(MediaQuery.sizeOf(context).width < 640 ? 10 : 24, 16, MediaQuery.sizeOf(context).width < 640 ? 10 : 24, 10),
+        actionsPadding: EdgeInsets.fromLTRB(MediaQuery.sizeOf(context).width < 640 ? 10 : 24, 0, MediaQuery.sizeOf(context).width < 640 ? 10 : 24, 18),
         title: Text(
           'تفاصيل الطلب ${order.orderNumber}',
           style: const TextStyle(
@@ -2977,7 +3094,7 @@ class _OrderDetailsDialogState extends State<OrderDetailsDialog> {
           ),
         ),
         content: SizedBox(
-          width: 860,
+          width: MediaQuery.sizeOf(context).width < 640 ? MediaQuery.sizeOf(context).width - 36 : 860,
           child: SingleChildScrollView(
             child: Column(
               children: [
@@ -2987,12 +3104,12 @@ class _OrderDetailsDialogState extends State<OrderDetailsDialog> {
                     spacing: 12,
                     runSpacing: 12,
                     children: [
-                      SizedBox(width: 250, child: InfoBlock(title: 'اسم الزبون', value: order.customerName.isEmpty ? '-' : order.customerName)),
-                      SizedBox(width: 250, child: InfoBlock(title: 'الهاتف', value: order.customerPhone.isEmpty ? '-' : order.customerPhone)),
-                      SizedBox(width: 250, child: InfoBlock(title: 'المدينة/المحافظة', value: order.deliveryCity ?? '-')),
-                      SizedBox(width: 250, child: InfoBlock(title: 'المنطقة', value: order.deliveryArea ?? '-')),
-                      SizedBox(width: 520, child: InfoBlock(title: 'العنوان', value: order.deliveryAddress ?? '-')),
-                      SizedBox(width: 250, child: InfoBlock(title: 'أقرب نقطة', value: order.deliveryNearestPoint ?? '-')),
+                      SizedBox(width: MediaQuery.sizeOf(context).width < 640 ? double.infinity : 250, child: InfoBlock(title: 'اسم الزبون', value: order.customerName.isEmpty ? '-' : order.customerName)),
+                      SizedBox(width: MediaQuery.sizeOf(context).width < 640 ? double.infinity : 250, child: InfoBlock(title: 'الهاتف', value: order.customerPhone.isEmpty ? '-' : order.customerPhone)),
+                      SizedBox(width: MediaQuery.sizeOf(context).width < 640 ? double.infinity : 250, child: InfoBlock(title: 'المدينة/المحافظة', value: order.deliveryCity ?? '-')),
+                      SizedBox(width: MediaQuery.sizeOf(context).width < 640 ? double.infinity : 250, child: InfoBlock(title: 'المنطقة', value: order.deliveryArea ?? '-')),
+                      SizedBox(width: MediaQuery.sizeOf(context).width < 640 ? double.infinity : 520, child: InfoBlock(title: 'العنوان', value: order.deliveryAddress ?? '-')),
+                      SizedBox(width: MediaQuery.sizeOf(context).width < 640 ? double.infinity : 250, child: InfoBlock(title: 'أقرب نقطة', value: order.deliveryNearestPoint ?? '-')),
                     ],
                   ),
                 ),
@@ -3009,11 +3126,9 @@ class _OrderDetailsDialogState extends State<OrderDetailsDialog> {
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: const Color(0xFFE2E8F0)),
                           ),
-                          child: Row(
+                          child: Wrap(
                             children: [
-                              Expanded(
-                                flex: 3,
-                                child: Column(
+                              SizedBox(width: MediaQuery.sizeOf(context).width < 640 ? double.infinity : 360, child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
@@ -3035,9 +3150,9 @@ class _OrderDetailsDialogState extends State<OrderDetailsDialog> {
                                   ],
                                 ),
                               ),
-                              SizedBox(width: 90, child: InfoBlock(title: 'الكمية', value: item.quantity.toString())),
-                              SizedBox(width: 130, child: InfoBlock(title: 'السعر', value: item.unitPriceText)),
-                              SizedBox(width: 130, child: InfoBlock(title: 'المجموع', value: item.totalText)),
+                              SizedBox(width: MediaQuery.sizeOf(context).width < 640 ? double.infinity : 90, child: InfoBlock(title: 'الكمية', value: item.quantity.toString())),
+                              SizedBox(width: MediaQuery.sizeOf(context).width < 640 ? double.infinity : 130, child: InfoBlock(title: 'السعر', value: item.unitPriceText)),
+                              SizedBox(width: MediaQuery.sizeOf(context).width < 640 ? double.infinity : 130, child: InfoBlock(title: 'المجموع', value: item.totalText)),
                             ],
                           ),
                         ),
@@ -3499,10 +3614,10 @@ class _AddProductDialogState extends State<AddProductDialog> {
       child: AlertDialog(
         backgroundColor: const Color(0xFFF8FAFC),
         surfaceTintColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(18),
-        titlePadding: const EdgeInsets.fromLTRB(24, 22, 24, 0),
-        contentPadding: const EdgeInsets.fromLTRB(24, 18, 24, 10),
-        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+        insetPadding: EdgeInsets.all(MediaQuery.sizeOf(context).width < 640 ? 8 : 18),
+        titlePadding: EdgeInsets.fromLTRB(MediaQuery.sizeOf(context).width < 640 ? 14 : 24, 20, MediaQuery.sizeOf(context).width < 640 ? 14 : 24, 0),
+        contentPadding: EdgeInsets.fromLTRB(MediaQuery.sizeOf(context).width < 640 ? 10 : 24, 16, MediaQuery.sizeOf(context).width < 640 ? 10 : 24, 10),
+        actionsPadding: EdgeInsets.fromLTRB(MediaQuery.sizeOf(context).width < 640 ? 10 : 24, 0, MediaQuery.sizeOf(context).width < 640 ? 10 : 24, 18),
         title: Text(
           _isEditMode ? 'تعديل المنتج' : 'إضافة منتج جديد',
           style: TextStyle(
@@ -5711,6 +5826,15 @@ class _CommercialErrorCard extends StatelessWidget {
     );
   }
 }
+
+
+
+
+
+
+
+
+
 
 
 
