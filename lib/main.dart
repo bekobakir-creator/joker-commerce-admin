@@ -245,6 +245,51 @@ class AdminApi {
       throw Exception('Update Order Status API Error ${response.statusCode}: ${response.body}');
     }
   }
+
+  Future<AdminBrandingSettings> fetchTenantBranding() async {
+    final uri = Uri.parse('$baseUrl/admin/tenant-branding?tenant=$tenantCode');
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'X-Tenant-Code': tenantCode,
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Branding API Error ${response.statusCode}: ${response.body}');
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    return AdminBrandingSettings.fromJson(
+      json['branding'] as Map<String, dynamic>? ?? {},
+    );
+  }
+
+  Future<AdminBrandingSettings> updateTenantBranding(AdminBrandingSettings settings) async {
+    final uri = Uri.parse('$baseUrl/admin/tenant-branding?tenant=$tenantCode');
+
+    final response = await http.patch(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-Tenant-Code': tenantCode,
+      },
+      body: jsonEncode(settings.toJson()),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Update Branding API Error ${response.statusCode}: ${response.body}');
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    return AdminBrandingSettings.fromJson(
+      json['branding'] as Map<String, dynamic>? ?? {},
+    );
+  }
+
 }
 
 class AdminCategory {
@@ -1570,6 +1615,23 @@ class AdminSidebar extends StatelessWidget {
     );
   }
 
+
+  void _openBranding(BuildContext context) {
+    if (selectedSection == 'branding') {
+      if (isDrawer) {
+        Navigator.of(context).pop();
+      }
+      return;
+    }
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => const BrandingSettingsPage(),
+      ),
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -1613,7 +1675,12 @@ class AdminSidebar extends StatelessWidget {
               const SidebarItem(Icons.category_outlined, 'الأقسام', false),
               const SidebarItem(Icons.storefront_outlined, 'المخازن والفروع', false),
               const SidebarItem(Icons.local_offer_outlined, 'الخصومات', false),
-              const SidebarItem(Icons.settings_outlined, 'إعدادات الهوية', false),
+              SidebarItem(
+                Icons.settings_outlined,
+                'إعدادات الهوية',
+                selectedSection == 'branding',
+                onTap: () => _openBranding(context),
+              ),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.all(14),
@@ -3577,25 +3644,971 @@ BoxDecoration cardDecoration() {
 }
 
 
+class AdminBrandingSettings {
+  const AdminBrandingSettings({
+    required this.appName,
+    required this.businessName,
+    required this.logoUrl,
+    required this.darkLogoUrl,
+    required this.appIconUrl,
+    required this.splashImageUrl,
+    required this.primaryColor,
+    required this.secondaryColor,
+    required this.accentColor,
+    required this.backgroundColor,
+    required this.textColor,
+    required this.buttonColor,
+    required this.fontFamily,
+    required this.defaultLocale,
+    required this.supportedLocales,
+    required this.textDirection,
+    required this.currencyCode,
+    required this.currencySymbol,
+    required this.deliveryEnabled,
+    required this.deliveryFeeType,
+    required this.deliveryFixedFee,
+    required this.freeDeliveryMinOrder,
+    required this.supportPhone,
+    required this.whatsappNumber,
+    required this.facebookUrl,
+    required this.instagramUrl,
+    required this.tiktokUrl,
+    required this.websiteUrl,
+    required this.privacyPolicyUrl,
+    required this.termsUrl,
+  });
 
+  final String appName;
+  final String businessName;
+  final String? logoUrl;
+  final String? darkLogoUrl;
+  final String? appIconUrl;
+  final String? splashImageUrl;
+  final String? primaryColor;
+  final String? secondaryColor;
+  final String? accentColor;
+  final String? backgroundColor;
+  final String? textColor;
+  final String? buttonColor;
+  final String? fontFamily;
+  final String? defaultLocale;
+  final List<String> supportedLocales;
+  final String? textDirection;
+  final String? currencyCode;
+  final String? currencySymbol;
+  final bool deliveryEnabled;
+  final String? deliveryFeeType;
+  final double? deliveryFixedFee;
+  final double? freeDeliveryMinOrder;
+  final String? supportPhone;
+  final String? whatsappNumber;
+  final String? facebookUrl;
+  final String? instagramUrl;
+  final String? tiktokUrl;
+  final String? websiteUrl;
+  final String? privacyPolicyUrl;
+  final String? termsUrl;
 
+  factory AdminBrandingSettings.fromJson(Map<String, dynamic> json) {
+    final localesJson = json['supported_locales'] as List<dynamic>? ?? const ['ar', 'en'];
 
+    return AdminBrandingSettings(
+      appName: json['app_name']?.toString() ?? '',
+      businessName: json['business_name']?.toString() ?? '',
+      logoUrl: json['logo_url']?.toString(),
+      darkLogoUrl: json['dark_logo_url']?.toString(),
+      appIconUrl: json['app_icon_url']?.toString(),
+      splashImageUrl: json['splash_image_url']?.toString(),
+      primaryColor: json['primary_color']?.toString(),
+      secondaryColor: json['secondary_color']?.toString(),
+      accentColor: json['accent_color']?.toString(),
+      backgroundColor: json['background_color']?.toString(),
+      textColor: json['text_color']?.toString(),
+      buttonColor: json['button_color']?.toString(),
+      fontFamily: json['font_family']?.toString(),
+      defaultLocale: json['default_locale']?.toString(),
+      supportedLocales: localesJson.map((item) => item.toString()).toList(),
+      textDirection: json['text_direction']?.toString(),
+      currencyCode: json['currency_code']?.toString(),
+      currencySymbol: json['currency_symbol']?.toString(),
+      deliveryEnabled: json['delivery_enabled'] == true,
+      deliveryFeeType: json['delivery_fee_type']?.toString(),
+      deliveryFixedFee: json['delivery_fixed_fee'] == null
+          ? null
+          : double.tryParse(json['delivery_fixed_fee'].toString()),
+      freeDeliveryMinOrder: json['free_delivery_min_order'] == null
+          ? null
+          : double.tryParse(json['free_delivery_min_order'].toString()),
+      supportPhone: json['support_phone']?.toString(),
+      whatsappNumber: json['whatsapp_number']?.toString(),
+      facebookUrl: json['facebook_url']?.toString(),
+      instagramUrl: json['instagram_url']?.toString(),
+      tiktokUrl: json['tiktok_url']?.toString(),
+      websiteUrl: json['website_url']?.toString(),
+      privacyPolicyUrl: json['privacy_policy_url']?.toString(),
+      termsUrl: json['terms_url']?.toString(),
+    );
+  }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'app_name': appName,
+      'business_name': businessName,
+      'logo_url': logoUrl,
+      'dark_logo_url': darkLogoUrl,
+      'app_icon_url': appIconUrl,
+      'splash_image_url': splashImageUrl,
+      'primary_color': primaryColor,
+      'secondary_color': secondaryColor,
+      'accent_color': accentColor,
+      'background_color': backgroundColor,
+      'text_color': textColor,
+      'button_color': buttonColor,
+      'font_family': fontFamily,
+      'default_locale': defaultLocale,
+      'supported_locales': supportedLocales,
+      'text_direction': textDirection,
+      'currency_code': currencyCode,
+      'currency_symbol': currencySymbol,
+      'delivery_enabled': deliveryEnabled,
+      'delivery_fee_type': deliveryFeeType,
+      'delivery_fixed_fee': deliveryFixedFee,
+      'free_delivery_min_order': freeDeliveryMinOrder,
+      'support_phone': supportPhone,
+      'whatsapp_number': whatsappNumber,
+      'facebook_url': facebookUrl,
+      'instagram_url': instagramUrl,
+      'tiktok_url': tiktokUrl,
+      'website_url': websiteUrl,
+      'privacy_policy_url': privacyPolicyUrl,
+      'terms_url': termsUrl,
+    };
+  }
+}
 
+class BrandingSettingsPage extends StatefulWidget {
+  const BrandingSettingsPage({super.key});
 
+  @override
+  State<BrandingSettingsPage> createState() => _BrandingSettingsPageState();
+}
 
+class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
+  final AdminApi _api = AdminApi();
 
+  late Future<AdminBrandingSettings> _future;
 
+  final _appNameController = TextEditingController();
+  final _businessNameController = TextEditingController();
+  final _logoUrlController = TextEditingController();
+  final _darkLogoUrlController = TextEditingController();
+  final _appIconUrlController = TextEditingController();
+  final _splashImageUrlController = TextEditingController();
 
+  final _primaryColorController = TextEditingController();
+  final _secondaryColorController = TextEditingController();
+  final _accentColorController = TextEditingController();
+  final _backgroundColorController = TextEditingController();
+  final _textColorController = TextEditingController();
+  final _buttonColorController = TextEditingController();
+  final _fontFamilyController = TextEditingController();
 
+  final _supportPhoneController = TextEditingController();
+  final _whatsappNumberController = TextEditingController();
+  final _facebookUrlController = TextEditingController();
+  final _instagramUrlController = TextEditingController();
+  final _tiktokUrlController = TextEditingController();
+  final _websiteUrlController = TextEditingController();
 
+  final _privacyPolicyUrlController = TextEditingController();
+  final _termsUrlController = TextEditingController();
 
+  final _currencyCodeController = TextEditingController();
+  final _currencySymbolController = TextEditingController();
+  final _deliveryFixedFeeController = TextEditingController();
+  final _freeDeliveryMinOrderController = TextEditingController();
 
+  bool _deliveryEnabled = true;
+  String _deliveryFeeType = 'fixed';
+  String _textDirection = 'rtl';
+  bool _loadedIntoForm = false;
+  bool _isSaving = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _future = _api.fetchTenantBranding();
+  }
 
+  @override
+  void dispose() {
+    _appNameController.dispose();
+    _businessNameController.dispose();
+    _logoUrlController.dispose();
+    _darkLogoUrlController.dispose();
+    _appIconUrlController.dispose();
+    _splashImageUrlController.dispose();
+    _primaryColorController.dispose();
+    _secondaryColorController.dispose();
+    _accentColorController.dispose();
+    _backgroundColorController.dispose();
+    _textColorController.dispose();
+    _buttonColorController.dispose();
+    _fontFamilyController.dispose();
+    _supportPhoneController.dispose();
+    _whatsappNumberController.dispose();
+    _facebookUrlController.dispose();
+    _instagramUrlController.dispose();
+    _tiktokUrlController.dispose();
+    _websiteUrlController.dispose();
+    _privacyPolicyUrlController.dispose();
+    _termsUrlController.dispose();
+    _currencyCodeController.dispose();
+    _currencySymbolController.dispose();
+    _deliveryFixedFeeController.dispose();
+    _freeDeliveryMinOrderController.dispose();
+    super.dispose();
+  }
 
+  void _loadIntoForm(AdminBrandingSettings settings) {
+    if (_loadedIntoForm) {
+      return;
+    }
 
+    _appNameController.text = settings.appName;
+    _businessNameController.text = settings.businessName;
+    _logoUrlController.text = settings.logoUrl ?? '';
+    _darkLogoUrlController.text = settings.darkLogoUrl ?? '';
+    _appIconUrlController.text = settings.appIconUrl ?? '';
+    _splashImageUrlController.text = settings.splashImageUrl ?? '';
 
+    _primaryColorController.text = settings.primaryColor ?? '#0B6E4F';
+    _secondaryColorController.text = settings.secondaryColor ?? '#50C878';
+    _accentColorController.text = settings.accentColor ?? '#D1F2EB';
+    _backgroundColorController.text = settings.backgroundColor ?? '#FFFFFF';
+    _textColorController.text = settings.textColor ?? '#013220';
+    _buttonColorController.text = settings.buttonColor ?? '#0B6E4F';
+    _fontFamilyController.text = settings.fontFamily ?? '';
 
+    _supportPhoneController.text = settings.supportPhone ?? '';
+    _whatsappNumberController.text = settings.whatsappNumber ?? '';
+    _facebookUrlController.text = settings.facebookUrl ?? '';
+    _instagramUrlController.text = settings.instagramUrl ?? '';
+    _tiktokUrlController.text = settings.tiktokUrl ?? '';
+    _websiteUrlController.text = settings.websiteUrl ?? '';
 
+    _privacyPolicyUrlController.text = settings.privacyPolicyUrl ?? '';
+    _termsUrlController.text = settings.termsUrl ?? '';
+
+    _currencyCodeController.text = settings.currencyCode ?? 'IQD';
+    _currencySymbolController.text = settings.currencySymbol ?? 'د.ع';
+    _deliveryFixedFeeController.text = settings.deliveryFixedFee?.toStringAsFixed(0) ?? '0';
+    _freeDeliveryMinOrderController.text = settings.freeDeliveryMinOrder?.toStringAsFixed(0) ?? '';
+
+    _deliveryEnabled = settings.deliveryEnabled;
+    _deliveryFeeType = settings.deliveryFeeType ?? 'fixed';
+    _textDirection = settings.textDirection ?? 'rtl';
+
+    _loadedIntoForm = true;
+  }
+
+  String? _nullableText(TextEditingController controller) {
+    final value = controller.text.trim();
+    return value.isEmpty ? null : value;
+  }
+
+  double? _nullableDouble(TextEditingController controller) {
+    final value = controller.text.trim();
+    if (value.isEmpty) {
+      return null;
+    }
+
+    return double.tryParse(value);
+  }
+
+  Future<void> _save() async {
+    if (_appNameController.text.trim().isEmpty || _businessNameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('اسم التطبيق واسم النشاط مطلوبان')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      final saved = await _api.updateTenantBranding(
+        AdminBrandingSettings(
+          appName: _appNameController.text.trim(),
+          businessName: _businessNameController.text.trim(),
+          logoUrl: _nullableText(_logoUrlController),
+          darkLogoUrl: _nullableText(_darkLogoUrlController),
+          appIconUrl: _nullableText(_appIconUrlController),
+          splashImageUrl: _nullableText(_splashImageUrlController),
+          primaryColor: _nullableText(_primaryColorController),
+          secondaryColor: _nullableText(_secondaryColorController),
+          accentColor: _nullableText(_accentColorController),
+          backgroundColor: _nullableText(_backgroundColorController),
+          textColor: _nullableText(_textColorController),
+          buttonColor: _nullableText(_buttonColorController),
+          fontFamily: _nullableText(_fontFamilyController),
+          defaultLocale: 'ar',
+          supportedLocales: const ['ar', 'en'],
+          textDirection: _textDirection,
+          currencyCode: _nullableText(_currencyCodeController) ?? 'IQD',
+          currencySymbol: _nullableText(_currencySymbolController) ?? 'د.ع',
+          deliveryEnabled: _deliveryEnabled,
+          deliveryFeeType: _deliveryFeeType,
+          deliveryFixedFee: _nullableDouble(_deliveryFixedFeeController) ?? 0,
+          freeDeliveryMinOrder: _nullableDouble(_freeDeliveryMinOrderController),
+          supportPhone: _nullableText(_supportPhoneController),
+          whatsappNumber: _nullableText(_whatsappNumberController),
+          facebookUrl: _nullableText(_facebookUrlController),
+          instagramUrl: _nullableText(_instagramUrlController),
+          tiktokUrl: _nullableText(_tiktokUrlController),
+          websiteUrl: _nullableText(_websiteUrlController),
+          privacyPolicyUrl: _nullableText(_privacyPolicyUrlController),
+          termsUrl: _nullableText(_termsUrlController),
+        ),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _loadedIntoForm = false;
+        _future = Future.value(saved);
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم حفظ إعدادات الهوية بنجاح')),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('فشل حفظ الإعدادات: $error')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
+  }
+
+  void _reload() {
+    setState(() {
+      _loadedIntoForm = false;
+      _future = _api.fetchTenantBranding();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 720;
+
+          if (isMobile) {
+            return Scaffold(
+              appBar: AppBar(
+                backgroundColor: Colors.white,
+                surfaceTintColor: Colors.white,
+                title: const Text(
+                  'إعدادات الهوية',
+                  style: TextStyle(
+                    color: Color(0xFF0F172A),
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                actions: [
+                  IconButton(
+                    onPressed: _reload,
+                    icon: const Icon(Icons.refresh),
+                  ),
+                ],
+              ),
+              drawer: const Drawer(
+                child: AdminSidebar(
+                  isDrawer: true,
+                  selectedSection: 'branding',
+                ),
+              ),
+              body: _BrandingSettingsBody(
+                future: _future,
+                isMobile: true,
+                loadIntoForm: _loadIntoForm,
+                onReload: _reload,
+                onSave: _save,
+                isSaving: _isSaving,
+                appNameController: _appNameController,
+                businessNameController: _businessNameController,
+                logoUrlController: _logoUrlController,
+                darkLogoUrlController: _darkLogoUrlController,
+                appIconUrlController: _appIconUrlController,
+                splashImageUrlController: _splashImageUrlController,
+                primaryColorController: _primaryColorController,
+                secondaryColorController: _secondaryColorController,
+                accentColorController: _accentColorController,
+                backgroundColorController: _backgroundColorController,
+                textColorController: _textColorController,
+                buttonColorController: _buttonColorController,
+                fontFamilyController: _fontFamilyController,
+                supportPhoneController: _supportPhoneController,
+                whatsappNumberController: _whatsappNumberController,
+                facebookUrlController: _facebookUrlController,
+                instagramUrlController: _instagramUrlController,
+                tiktokUrlController: _tiktokUrlController,
+                websiteUrlController: _websiteUrlController,
+                privacyPolicyUrlController: _privacyPolicyUrlController,
+                termsUrlController: _termsUrlController,
+                currencyCodeController: _currencyCodeController,
+                currencySymbolController: _currencySymbolController,
+                deliveryFixedFeeController: _deliveryFixedFeeController,
+                freeDeliveryMinOrderController: _freeDeliveryMinOrderController,
+                deliveryEnabled: _deliveryEnabled,
+                deliveryFeeType: _deliveryFeeType,
+                textDirectionValue: _textDirection,
+                onDeliveryEnabledChanged: (value) {
+                  setState(() => _deliveryEnabled = value);
+                },
+                onDeliveryFeeTypeChanged: (value) {
+                  if (value != null) {
+                    setState(() => _deliveryFeeType = value);
+                  }
+                },
+                onTextDirectionChanged: (value) {
+                  if (value != null) {
+                    setState(() => _textDirection = value);
+                  }
+                },
+              ),
+            );
+          }
+
+          return Scaffold(
+            body: Row(
+              children: [
+                const AdminSidebar(selectedSection: 'branding'),
+                Expanded(
+                  child: _BrandingSettingsBody(
+                    future: _future,
+                    isMobile: false,
+                    loadIntoForm: _loadIntoForm,
+                    onReload: _reload,
+                    onSave: _save,
+                    isSaving: _isSaving,
+                    appNameController: _appNameController,
+                    businessNameController: _businessNameController,
+                    logoUrlController: _logoUrlController,
+                    darkLogoUrlController: _darkLogoUrlController,
+                    appIconUrlController: _appIconUrlController,
+                    splashImageUrlController: _splashImageUrlController,
+                    primaryColorController: _primaryColorController,
+                    secondaryColorController: _secondaryColorController,
+                    accentColorController: _accentColorController,
+                    backgroundColorController: _backgroundColorController,
+                    textColorController: _textColorController,
+                    buttonColorController: _buttonColorController,
+                    fontFamilyController: _fontFamilyController,
+                    supportPhoneController: _supportPhoneController,
+                    whatsappNumberController: _whatsappNumberController,
+                    facebookUrlController: _facebookUrlController,
+                    instagramUrlController: _instagramUrlController,
+                    tiktokUrlController: _tiktokUrlController,
+                    websiteUrlController: _websiteUrlController,
+                    privacyPolicyUrlController: _privacyPolicyUrlController,
+                    termsUrlController: _termsUrlController,
+                    currencyCodeController: _currencyCodeController,
+                    currencySymbolController: _currencySymbolController,
+                    deliveryFixedFeeController: _deliveryFixedFeeController,
+                    freeDeliveryMinOrderController: _freeDeliveryMinOrderController,
+                    deliveryEnabled: _deliveryEnabled,
+                    deliveryFeeType: _deliveryFeeType,
+                    textDirectionValue: _textDirection,
+                    onDeliveryEnabledChanged: (value) {
+                      setState(() => _deliveryEnabled = value);
+                    },
+                    onDeliveryFeeTypeChanged: (value) {
+                      if (value != null) {
+                        setState(() => _deliveryFeeType = value);
+                      }
+                    },
+                    onTextDirectionChanged: (value) {
+                      if (value != null) {
+                        setState(() => _textDirection = value);
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _BrandingSettingsBody extends StatelessWidget {
+  const _BrandingSettingsBody({
+    required this.future,
+    required this.isMobile,
+    required this.loadIntoForm,
+    required this.onReload,
+    required this.onSave,
+    required this.isSaving,
+    required this.appNameController,
+    required this.businessNameController,
+    required this.logoUrlController,
+    required this.darkLogoUrlController,
+    required this.appIconUrlController,
+    required this.splashImageUrlController,
+    required this.primaryColorController,
+    required this.secondaryColorController,
+    required this.accentColorController,
+    required this.backgroundColorController,
+    required this.textColorController,
+    required this.buttonColorController,
+    required this.fontFamilyController,
+    required this.supportPhoneController,
+    required this.whatsappNumberController,
+    required this.facebookUrlController,
+    required this.instagramUrlController,
+    required this.tiktokUrlController,
+    required this.websiteUrlController,
+    required this.privacyPolicyUrlController,
+    required this.termsUrlController,
+    required this.currencyCodeController,
+    required this.currencySymbolController,
+    required this.deliveryFixedFeeController,
+    required this.freeDeliveryMinOrderController,
+    required this.deliveryEnabled,
+    required this.deliveryFeeType,
+    required this.textDirectionValue,
+    required this.onDeliveryEnabledChanged,
+    required this.onDeliveryFeeTypeChanged,
+    required this.onTextDirectionChanged,
+  });
+
+  final Future<AdminBrandingSettings> future;
+  final bool isMobile;
+  final ValueChanged<AdminBrandingSettings> loadIntoForm;
+  final VoidCallback onReload;
+  final VoidCallback onSave;
+  final bool isSaving;
+
+  final TextEditingController appNameController;
+  final TextEditingController businessNameController;
+  final TextEditingController logoUrlController;
+  final TextEditingController darkLogoUrlController;
+  final TextEditingController appIconUrlController;
+  final TextEditingController splashImageUrlController;
+  final TextEditingController primaryColorController;
+  final TextEditingController secondaryColorController;
+  final TextEditingController accentColorController;
+  final TextEditingController backgroundColorController;
+  final TextEditingController textColorController;
+  final TextEditingController buttonColorController;
+  final TextEditingController fontFamilyController;
+  final TextEditingController supportPhoneController;
+  final TextEditingController whatsappNumberController;
+  final TextEditingController facebookUrlController;
+  final TextEditingController instagramUrlController;
+  final TextEditingController tiktokUrlController;
+  final TextEditingController websiteUrlController;
+  final TextEditingController privacyPolicyUrlController;
+  final TextEditingController termsUrlController;
+  final TextEditingController currencyCodeController;
+  final TextEditingController currencySymbolController;
+  final TextEditingController deliveryFixedFeeController;
+  final TextEditingController freeDeliveryMinOrderController;
+
+  final bool deliveryEnabled;
+  final String deliveryFeeType;
+  final String textDirectionValue;
+  final ValueChanged<bool> onDeliveryEnabledChanged;
+  final ValueChanged<String?> onDeliveryFeeTypeChanged;
+  final ValueChanged<String?> onTextDirectionChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFFF1F5F9),
+      child: FutureBuilder<AdminBrandingSettings>(
+        future: future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  'فشل تحميل إعدادات الهوية: ${snapshot.error}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Color(0xFFB91C1C)),
+                ),
+              ),
+            );
+          }
+
+          final settings = snapshot.data;
+          if (settings != null) {
+            loadIntoForm(settings);
+          }
+
+          return ListView(
+            padding: EdgeInsets.all(isMobile ? 14 : 24),
+            children: [
+              _BrandingHeader(
+                isMobile: isMobile,
+                onReload: onReload,
+                onSave: onSave,
+                isSaving: isSaving,
+              ),
+              const SizedBox(height: 18),
+              _SettingsSection(
+                title: 'معلومات المتجر',
+                children: [
+                  _ResponsiveFields(
+                    isNarrow: isMobile,
+                    children: [
+                      _SettingTextField(
+                        controller: appNameController,
+                        label: 'اسم التطبيق',
+                        icon: Icons.apps_outlined,
+                      ),
+                      _SettingTextField(
+                        controller: businessNameController,
+                        label: 'اسم النشاط',
+                        icon: Icons.storefront_outlined,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              _SettingsSection(
+                title: 'الشعارات والصور',
+                children: [
+                  _ResponsiveFields(
+                    isNarrow: isMobile,
+                    children: [
+                      _SettingTextField(controller: logoUrlController, label: 'رابط الشعار', icon: Icons.image_outlined),
+                      _SettingTextField(controller: darkLogoUrlController, label: 'رابط الشعار الداكن', icon: Icons.dark_mode_outlined),
+                      _SettingTextField(controller: appIconUrlController, label: 'رابط أيقونة التطبيق', icon: Icons.apps),
+                      _SettingTextField(controller: splashImageUrlController, label: 'رابط صورة البداية', icon: Icons.wallpaper_outlined),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              _SettingsSection(
+                title: 'الألوان والخط',
+                children: [
+                  _ResponsiveFields(
+                    isNarrow: isMobile,
+                    children: [
+                      _SettingTextField(controller: primaryColorController, label: 'اللون الرئيسي', icon: Icons.palette_outlined),
+                      _SettingTextField(controller: secondaryColorController, label: 'اللون الثانوي', icon: Icons.palette),
+                      _SettingTextField(controller: accentColorController, label: 'لون مساعد', icon: Icons.color_lens_outlined),
+                      _SettingTextField(controller: backgroundColorController, label: 'لون الخلفية', icon: Icons.format_color_fill_outlined),
+                      _SettingTextField(controller: textColorController, label: 'لون النص', icon: Icons.text_fields),
+                      _SettingTextField(controller: buttonColorController, label: 'لون الأزرار', icon: Icons.smart_button_outlined),
+                      _SettingTextField(controller: fontFamilyController, label: 'اسم الخط', icon: Icons.font_download_outlined),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              _SettingsSection(
+                title: 'اللغة والعملة',
+                children: [
+                  _ResponsiveFields(
+                    isNarrow: isMobile,
+                    children: [
+                      _SettingTextField(controller: currencyCodeController, label: 'رمز العملة', icon: Icons.payments_outlined),
+                      _SettingTextField(controller: currencySymbolController, label: 'علامة العملة', icon: Icons.attach_money),
+                      DropdownButtonFormField<String>(
+                        value: textDirectionValue,
+                        items: const [
+                          DropdownMenuItem(value: 'rtl', child: Text('RTL - عربي')),
+                          DropdownMenuItem(value: 'ltr', child: Text('LTR - إنكليزي')),
+                        ],
+                        onChanged: onTextDirectionChanged,
+                        decoration: _inputDecoration('اتجاه النص', Icons.format_textdirection_r_to_l),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              _SettingsSection(
+                title: 'التواصل والسوشيال',
+                children: [
+                  _ResponsiveFields(
+                    isNarrow: isMobile,
+                    children: [
+                      _SettingTextField(controller: supportPhoneController, label: 'رقم الدعم', icon: Icons.phone_outlined),
+                      _SettingTextField(controller: whatsappNumberController, label: 'رقم واتساب', icon: Icons.chat_outlined),
+                      _SettingTextField(controller: facebookUrlController, label: 'Facebook URL', icon: Icons.facebook_outlined),
+                      _SettingTextField(controller: instagramUrlController, label: 'Instagram URL', icon: Icons.camera_alt_outlined),
+                      _SettingTextField(controller: tiktokUrlController, label: 'TikTok URL', icon: Icons.video_library_outlined),
+                      _SettingTextField(controller: websiteUrlController, label: 'Website URL', icon: Icons.language_outlined),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              _SettingsSection(
+                title: 'التوصيل',
+                children: [
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: deliveryEnabled,
+                    onChanged: onDeliveryEnabledChanged,
+                    title: const Text(
+                      'تفعيل التوصيل',
+                      style: TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                  _ResponsiveFields(
+                    isNarrow: isMobile,
+                    children: [
+                      DropdownButtonFormField<String>(
+                        value: deliveryFeeType,
+                        items: const [
+                          DropdownMenuItem(value: 'fixed', child: Text('أجور ثابتة')),
+                          DropdownMenuItem(value: 'free', child: Text('توصيل مجاني')),
+                        ],
+                        onChanged: onDeliveryFeeTypeChanged,
+                        decoration: _inputDecoration('نوع أجور التوصيل', Icons.local_shipping_outlined),
+                      ),
+                      _SettingTextField(
+                        controller: deliveryFixedFeeController,
+                        label: 'أجور التوصيل الثابتة',
+                        icon: Icons.payments_outlined,
+                        keyboardType: TextInputType.number,
+                      ),
+                      _SettingTextField(
+                        controller: freeDeliveryMinOrderController,
+                        label: 'الحد الأدنى للتوصيل المجاني',
+                        icon: Icons.price_check_outlined,
+                        keyboardType: TextInputType.number,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              _SettingsSection(
+                title: 'الروابط القانونية',
+                children: [
+                  _ResponsiveFields(
+                    isNarrow: isMobile,
+                    children: [
+                      _SettingTextField(controller: privacyPolicyUrlController, label: 'Privacy Policy URL', icon: Icons.privacy_tip_outlined),
+                      _SettingTextField(controller: termsUrlController, label: 'Terms URL', icon: Icons.gavel_outlined),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 22),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: FilledButton.icon(
+                  onPressed: isSaving ? null : onSave,
+                  icon: isSaving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.save_outlined),
+                  label: Text(isSaving ? 'جاري الحفظ...' : 'حفظ الإعدادات'),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _BrandingHeader extends StatelessWidget {
+  const _BrandingHeader({
+    required this.isMobile,
+    required this.onReload,
+    required this.onSave,
+    required this.isSaving,
+  });
+
+  final bool isMobile;
+  final VoidCallback onReload;
+  final VoidCallback onSave;
+  final bool isSaving;
+
+  @override
+  Widget build(BuildContext context) {
+    final actions = [
+      OutlinedButton.icon(
+        onPressed: onReload,
+        icon: const Icon(Icons.refresh),
+        label: const Text('تحديث'),
+      ),
+      FilledButton.icon(
+        onPressed: isSaving ? null : onSave,
+        icon: const Icon(Icons.save_outlined),
+        label: const Text('حفظ'),
+      ),
+    ];
+
+    return Container(
+      padding: EdgeInsets.all(isMobile ? 18 : 22),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.12),
+            blurRadius: 24,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: isMobile
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const _BrandingHeaderText(),
+                const SizedBox(height: 16),
+                Wrap(spacing: 10, runSpacing: 10, children: actions),
+              ],
+            )
+          : Row(
+              children: [
+                const Expanded(child: _BrandingHeaderText()),
+                Wrap(spacing: 10, runSpacing: 10, children: actions),
+              ],
+            ),
+    );
+  }
+}
+
+class _BrandingHeaderText extends StatelessWidget {
+  const _BrandingHeaderText();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'إعدادات الهوية',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 27,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        SizedBox(height: 8),
+        Text(
+          'تحكم باسم المتجر، الألوان، الشعارات، التواصل، والتوصيل لكل Tenant بدون تثبيت أي قيمة داخل الكود.',
+          style: TextStyle(
+            color: Color(0xFFCBD5E1),
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SettingsSection extends StatelessWidget {
+  const _SettingsSection({
+    required this.title,
+    required this.children,
+  });
+
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: Color(0xFF0F172A),
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 14),
+          ...children,
+        ],
+      ),
+    );
+  }
+}
+
+class _SettingTextField extends StatelessWidget {
+  const _SettingTextField({
+    required this.controller,
+    required this.label,
+    required this.icon,
+    this.keyboardType,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final IconData icon;
+  final TextInputType? keyboardType;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      decoration: _inputDecoration(label, icon),
+    );
+  }
+}
+
+InputDecoration _inputDecoration(String label, IconData icon) {
+  return InputDecoration(
+    labelText: label,
+    prefixIcon: Icon(icon),
+    filled: true,
+    fillColor: const Color(0xFFF8FAFC),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(18),
+      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(18),
+      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+    ),
+  );
+}
 
