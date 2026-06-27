@@ -25,19 +25,351 @@ class JokerCommerceAdminApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFFF1F5F9),
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0F172A)),
       ),
-      home: const ProductsDashboardPage(),
+      home: const AuthGate(),
     );
   }
 }
+
+
+class AuthSession {
+  static const String _tokenKey = 'joker_admin_access_token';
+
+  static String? get token {
+    final value = html.window.localStorage[_tokenKey];
+    if (value == null || value.trim().isEmpty) {
+      return null;
+    }
+
+    return value;
+  }
+
+  static bool get hasToken => token != null;
+
+  static void saveToken(String token) {
+    html.window.localStorage[_tokenKey] = token;
+  }
+
+  static void clear() {
+    html.window.localStorage.remove(_tokenKey);
+  }
+}
+
+class AuthGate extends StatefulWidget {
+  const AuthGate({super.key});
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  final AdminApi _api = AdminApi();
+  late Future<bool> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _checkSession();
+  }
+
+  Future<bool> _checkSession() async {
+    if (!AuthSession.hasToken) {
+      return false;
+    }
+
+    try {
+      await _api.fetchMe();
+      return true;
+    } catch (_) {
+      AuthSession.clear();
+      return false;
+    }
+  }
+
+  void _onLoggedIn() {
+    setState(() {
+      _future = Future.value(true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: _future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (snapshot.data == true) {
+          return const ProductsDashboardPage();
+        }
+
+        return LoginPage(onLoggedIn: _onLoggedIn);
+      },
+    );
+  }
+}
+
+class LoginPage extends StatefulWidget {
+  const LoginPage({
+    super.key,
+    required this.onLoggedIn,
+  });
+
+  final VoidCallback onLoggedIn;
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final AdminApi _api = AdminApi();
+  final TextEditingController _emailController = TextEditingController(
+    text: 'admin@joker-commerce.local',
+  );
+  final TextEditingController _passwordController = TextEditingController(
+    text: 'Admin@123456',
+  );
+
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _login() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await _api.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      widget.onLoggedIn();
+    } catch (error) {
+      setState(() {
+        _errorMessage = error.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 460),
+            child: Card(
+              elevation: 0,
+              margin: const EdgeInsets.all(24),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
+                side: const BorderSide(color: Color(0xFFE2E8F0)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(28),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Icon(
+                      Icons.admin_panel_settings_rounded,
+                      size: 54,
+                      color: Color(0xFF0F172A),
+                    ),
+                    const SizedBox(height: 18),
+                    const Text(
+                      'تسجيل دخول لوحة Joker Commerce',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 23,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'ادخل بحساب Super Admin أو حساب مدير المتجر.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Color(0xFF64748B),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    TextField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(
+                        labelText: 'البريد الإلكتروني',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.email_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: _passwordController,
+                      obscureText: true,
+                      onSubmitted: (_) => _isLoading ? null : _login(),
+                      decoration: const InputDecoration(
+                        labelText: 'كلمة المرور',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.lock_outline),
+                      ),
+                    ),
+                    if (_errorMessage != null) ...[
+                      const SizedBox(height: 14),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF2F2),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFFECACA)),
+                        ),
+                        child: Text(
+                          _errorMessage!,
+                          style: const TextStyle(
+                            color: Color(0xFF991B1B),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 20),
+                    FilledButton.icon(
+                      onPressed: _isLoading ? null : _login,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF0F172A),
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                      ),
+                      icon: _isLoading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.login),
+                      label: Text(_isLoading ? 'جاري الدخول...' : 'دخول'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 
 class AdminApi {
   static const String _configuredBaseUrl = String.fromEnvironment('API_BASE_URL');
 
   final String baseUrl = _configuredBaseUrl.trim().isNotEmpty
       ? _configuredBaseUrl.trim()
-      : 'http://192.168.100.8:8099/api';
+      : 'http://187.127.70.62:8088/api';
 
   final String tenantCode = 'demo';
+
+  Map<String, String> get _jsonHeaders {
+    final headers = <String, String>{
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'X-Tenant-Code': tenantCode,
+    };
+
+    final token = AuthSession.token;
+    if (token != null) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+
+    return headers;
+  }
+
+  Future<Map<String, dynamic>> login({
+    required String email,
+    required String password,
+  }) async {
+    final uri = Uri.parse('$baseUrl/auth/login');
+
+    final response = await http.post(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'email': email,
+        'password': password,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Login API Error ${response.statusCode}: ${response.body}');
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    final token = json['access_token']?.toString() ?? '';
+
+    if (token.isEmpty) {
+      throw Exception('Login API Error: access token not found.');
+    }
+
+    AuthSession.saveToken(token);
+
+    return json;
+  }
+
+  Future<Map<String, dynamic>> fetchMe() async {
+    final uri = Uri.parse('$baseUrl/auth/me');
+
+    final response = await http.get(
+      uri,
+      headers: _jsonHeaders,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Me API Error ${response.statusCode}: ${response.body}');
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<void> logout() async {
+    final uri = Uri.parse('$baseUrl/auth/logout');
+
+    await http.post(
+      uri,
+      headers: _jsonHeaders,
+    );
+
+    AuthSession.clear();
+  }
+
+
 
   Future<List<AdminProduct>> fetchProducts() async {
     final uri = Uri.parse('$baseUrl/admin/products?tenant=$tenantCode');
@@ -5379,4 +5711,7 @@ class _CommercialErrorCard extends StatelessWidget {
     );
   }
 }
+
+
+
 
