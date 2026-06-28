@@ -3204,11 +3204,11 @@ class SlidesDashboardPage extends StatelessWidget {
       textDirection: TextDirection.rtl,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isMobilee = constraints.maxWidth < 760;
+          final isMobile = constraints.maxWidth < 760;
 
           return Scaffold(
             backgroundColor: const Color(0xFFF1F5F9),
-            drawer: isMobilee
+            drawer: isMobile
                 ? const Drawer(
                     child: AdminSidebar(
                       isDrawer: true,
@@ -3216,47 +3216,150 @@ class SlidesDashboardPage extends StatelessWidget {
                     ),
                   )
                 : null,
-            appBar: isMobilee
+            appBar: isMobile
                 ? AppBar(
-                    title: const Text('السلايدات '),
+                    title: const Text('السلايدات'),
                     backgroundColor: const Color(0xFF0F172A),
                     foregroundColor: Colors.white,
                   )
                 : null,
             body: Row(
               children: [
-                if (!isMobilee) const AdminSidebar(selectedSection: 'slides'),
+                if (!isMobile) const AdminSidebar(selectedSection: 'slides'),
                 Expanded(
-                  child: Center(
-                    child: Card(
-                      margin: const EdgeInsets.all(24),
-                      child: Padding(
-                        padding: const EdgeInsets.all(28),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            Icon(
-                              Icons.slideshow_outlined,
-                              size: 54,
-                              color: Color(0xFF0F172A),
-                            ),
-                            SizedBox(height: 16),
-                            Text(
-                              'إدارة السلايدات ',
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w900,
+                  child: FutureBuilder<List<AdminSlide>>(
+                    future: AdminApi().fetchAdminSlides(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      if (snapshot.hasError) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Card(
+                              child: Padding(
+                                padding: const EdgeInsets.all(22),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.error_outline,
+                                      color: Color(0xFFDC2626),
+                                      size: 42,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    const Text(
+                                      'تعذر تحميل السلايدات',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      snapshot.error.toString(),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                            SizedBox(height: 8),
-                            Text(
-                              'الصفحة انضافت. الخطوة التالية نربط القائمة والتعديل ورفع الصور.',
-                              textAlign: TextAlign.center,
+                          ),
+                        );
+                      }
+
+                      final slides = snapshot.data ?? <AdminSlide>[];
+
+                      return ListView(
+                        padding: EdgeInsets.all(isMobile ? 14 : 24),
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(isMobile ? 18 : 22),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: const Color(0xFFE2E8F0),
+                              ),
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
+                            child: Row(
+                              children: [
+                                const Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'السلايدات',
+                                        style: TextStyle(
+                                          color: Color(0xFF0F172A),
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                      SizedBox(height: 6),
+                                      Text(
+                                        'إدارة صور السلايدر والبنرات الخاصة بالمتجر الحالي.',
+                                        style: TextStyle(
+                                          color: Color(0xFF64748B),
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                MiniTag('${slides.length} سلايد'),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          if (slides.isEmpty)
+                            const Card(
+                              child: Padding(
+                                padding: EdgeInsets.all(28),
+                                child: Center(
+                                  child: Text('لا توجد سلايدات حالياً'),
+                                ),
+                              ),
+                            )
+                          else
+                            ...slides.map(
+                              (slide) => Card(
+                                margin: const EdgeInsets.only(bottom: 14),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(14),
+                                  child: isMobile
+                                      ? Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
+                                          children: [
+                                            _SlidePreviewImage(slide: slide),
+                                            const SizedBox(height: 14),
+                                            _SlideInfo(slide: slide),
+                                          ],
+                                        )
+                                      : Row(
+                                          children: [
+                                            SizedBox(
+                                              width: 280,
+                                              child: _SlidePreviewImage(
+                                                slide: slide,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 18),
+                                            Expanded(
+                                              child: _SlideInfo(slide: slide),
+                                            ),
+                                          ],
+                                        ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ],
@@ -3264,6 +3367,91 @@ class SlidesDashboardPage extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class _SlidePreviewImage extends StatelessWidget {
+  const _SlidePreviewImage({required this.slide});
+
+  final AdminSlide slide;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: AspectRatio(
+        aspectRatio: 16 / 7,
+        child: slide.imageUrl.isEmpty
+            ? Container(
+                color: const Color(0xFFE2E8F0),
+                child: const Icon(Icons.image_not_supported_outlined),
+              )
+            : Image.network(
+                slide.imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: const Color(0xFFE2E8F0),
+                  child: const Icon(Icons.broken_image_outlined),
+                ),
+              ),
+      ),
+    );
+  }
+}
+
+class _SlideInfo extends StatelessWidget {
+  const _SlideInfo({required this.slide});
+
+  final AdminSlide slide;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                slide.title?.isNotEmpty == true ? slide.title! : 'بدون عنوان',
+                style: const TextStyle(
+                  color: Color(0xFF0F172A),
+                  fontWeight: FontWeight.w900,
+                  fontSize: 18,
+                ),
+              ),
+            ),
+            StatusChip(status: slide.status),
+          ],
+        ),
+        if (slide.subtitle?.isNotEmpty == true) ...[
+          const SizedBox(height: 8),
+          Text(
+            slide.subtitle!,
+            style: const TextStyle(
+              color: Color(0xFF64748B),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            MiniTag('ترتيب: ${slide.sortOrder}'),
+            if (slide.linkUrl?.isNotEmpty == true) MiniTag('يحتوي رابط'),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Text(
+          slide.imageUrl,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+        ),
+      ],
     );
   }
 }
