@@ -3214,6 +3214,59 @@ class _SlidesDashboardPageState extends State<SlidesDashboardPage> {
     });
   }
 
+  Future<void> _pickAndUploadSlideImage(
+    TextEditingController imageUrlController,
+  ) async {
+    final input = html.FileUploadInputElement()
+      ..accept = 'image/jpeg,image/png,image/webp'
+      ..multiple = false;
+
+    input.click();
+    await input.onChange.first;
+
+    if (input.files == null || input.files!.isEmpty) {
+      return;
+    }
+
+    final file = input.files!.first;
+    final reader = html.FileReader();
+
+    reader.readAsArrayBuffer(file);
+    await reader.onLoad.first;
+
+    final result = reader.result;
+    late final List<int> bytes;
+
+    if (result is ByteBuffer) {
+      bytes = result.asUint8List();
+    } else if (result is Uint8List) {
+      bytes = result;
+    } else {
+      throw Exception('Unsupported image file');
+    }
+
+    try {
+      final url = await _api.uploadSlideImage(
+        bytes: bytes,
+        fileName: file.name,
+      );
+      if (!mounted) return;
+      imageUrlController.text = url;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            '\u062a\u0645 \u0631\u0641\u0639 \u0627\u0644\u0635\u0648\u0631\u0629',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
+    }
+  }
+
   Future<void> _openAddSlide() async {
     final titleController = TextEditingController();
     final subtitleController = TextEditingController();
@@ -3260,6 +3313,21 @@ class _SlidesDashboardPageState extends State<SlidesDashboardPage> {
                           decoration: const InputDecoration(
                             labelText:
                                 '\u0631\u0627\u0628\u0637 \u0627\u0644\u0635\u0648\u0631\u0629',
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: OutlinedButton.icon(
+                            onPressed: saving
+                                ? null
+                                : () => _pickAndUploadSlideImage(
+                                    imageUrlController,
+                                  ),
+                            icon: const Icon(Icons.upload_file_outlined),
+                            label: const Text(
+                              '\u0631\u0641\u0639 \u0635\u0648\u0631\u0629',
+                            ),
                           ),
                         ),
                         const SizedBox(height: 12),
