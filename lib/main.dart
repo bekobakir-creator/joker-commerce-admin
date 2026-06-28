@@ -30,7 +30,6 @@ class JokerCommerceAdminApp extends StatelessWidget {
   }
 }
 
-
 class AuthSession {
   static const String _tokenKey = 'joker_admin_access_token';
 
@@ -69,13 +68,17 @@ class CurrentAdminSession {
   static bool get isOrdersStaff => role == 'orders_staff';
   static bool get isInventoryStaff => role == 'inventory_staff';
 
-  static bool get canViewProducts => isSuperAdmin || isTenantAdmin || isManager || isInventoryStaff;
-  static bool get canViewOrders => isSuperAdmin || isTenantAdmin || isManager || isOrdersStaff;
+  static bool get canViewProducts =>
+      isSuperAdmin || isTenantAdmin || isManager || isInventoryStaff;
+  static bool get canViewOrders =>
+      isSuperAdmin || isTenantAdmin || isManager || isOrdersStaff;
   static bool get canViewAccounts => isSuperAdmin || isTenantAdmin;
   static bool get canViewBranding => isSuperAdmin || isTenantAdmin;
   static bool get canViewCommercial => isSuperAdmin;
-  static bool get canManageProducts => isSuperAdmin || isTenantAdmin || isManager || isInventoryStaff;
-  static bool get canManageOrders => isSuperAdmin || isTenantAdmin || isManager || isOrdersStaff;
+  static bool get canManageProducts =>
+      isSuperAdmin || isTenantAdmin || isManager || isInventoryStaff;
+  static bool get canManageOrders =>
+      isSuperAdmin || isTenantAdmin || isManager || isOrdersStaff;
   static bool get canManageAccounts => isSuperAdmin || isTenantAdmin;
   static bool get canManageBranding => isSuperAdmin || isTenantAdmin;
   static bool get canManageCommercial => isSuperAdmin;
@@ -205,10 +208,7 @@ class _AuthGateState extends State<AuthGate> {
 }
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({
-    super.key,
-    required this.onLoggedIn,
-  });
+  const LoginPage({super.key, required this.onLoggedIn});
 
   final VoidCallback onLoggedIn;
 
@@ -376,9 +376,10 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-
 class AdminApi {
-  static const String _configuredBaseUrl = String.fromEnvironment('API_BASE_URL');
+  static const String _configuredBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+  );
 
   final String baseUrl = _configuredBaseUrl.trim().isNotEmpty
       ? _configuredBaseUrl.trim()
@@ -413,14 +414,13 @@ class AdminApi {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode({
-        'phone': phone,
-        'password': password,
-      }),
+      body: jsonEncode({'phone': phone, 'password': password}),
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Login API Error ${response.statusCode}: ${response.body}');
+      throw Exception(
+        'Login API Error ${response.statusCode}: ${response.body}',
+      );
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -440,10 +440,7 @@ class AdminApi {
   Future<Map<String, dynamic>> fetchMe() async {
     final uri = Uri.parse('$baseUrl/auth/me');
 
-    final response = await http.get(
-      uri,
-      headers: _jsonHeaders,
-    );
+    final response = await http.get(uri, headers: _jsonHeaders);
 
     if (response.statusCode != 200) {
       throw Exception('Me API Error ${response.statusCode}: ${response.body}');
@@ -457,25 +454,17 @@ class AdminApi {
   Future<void> logout() async {
     final uri = Uri.parse('$baseUrl/auth/logout');
 
-    await http.post(
-      uri,
-      headers: _jsonHeaders,
-    );
+    await http.post(uri, headers: _jsonHeaders);
 
     AuthSession.clear();
   }
-
-
 
   Future<List<AdminProduct>> fetchProducts() async {
     final uri = Uri.parse('$baseUrl/admin/products?tenant=$tenantCode');
 
     final response = await http.get(
       uri,
-      headers: {
-        'Accept': 'application/json',
-        'X-Tenant-Code': tenantCode,
-      },
+      headers: {'Accept': 'application/json', 'X-Tenant-Code': tenantCode},
     );
 
     if (response.statusCode != 200) {
@@ -489,19 +478,19 @@ class AdminApi {
         .map((item) => AdminProduct.fromJson(item as Map<String, dynamic>))
         .toList();
   }
+
   Future<List<AdminCategory>> fetchCategories() async {
     final uri = Uri.parse('$baseUrl/categories?tenant=$tenantCode');
 
     final response = await http.get(
       uri,
-      headers: {
-        'Accept': 'application/json',
-        'X-Tenant-Code': tenantCode,
-      },
+      headers: {'Accept': 'application/json', 'X-Tenant-Code': tenantCode},
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Categories API Error ${response.statusCode}: ${response.body}');
+      throw Exception(
+        'Categories API Error ${response.statusCode}: ${response.body}',
+      );
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -517,14 +506,13 @@ class AdminApi {
 
     final response = await http.get(
       uri,
-      headers: {
-        'Accept': 'application/json',
-        'X-Tenant-Code': tenantCode,
-      },
+      headers: {'Accept': 'application/json', 'X-Tenant-Code': tenantCode},
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Admin Categories API Error ${response.statusCode}: ${response.body}');
+      throw Exception(
+        'Admin Categories API Error ${response.statusCode}: ${response.body}',
+      );
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -549,12 +537,19 @@ class AdminApi {
     );
 
     if (response.statusCode != 201) {
-      throw Exception('Create Category API Error ${response.statusCode}: ${response.body}');
+      throw Exception(
+        'Create Category API Error ${response.statusCode}: ${response.body}',
+      );
     }
   }
 
-  Future<void> updateCategory(int categoryId, CreateCategoryRequest request) async {
-    final uri = Uri.parse('$baseUrl/admin/categories/$categoryId?tenant=$tenantCode');
+  Future<void> updateCategory(
+    int categoryId,
+    CreateCategoryRequest request,
+  ) async {
+    final uri = Uri.parse(
+      '$baseUrl/admin/categories/$categoryId?tenant=$tenantCode',
+    );
 
     final response = await http.put(
       uri,
@@ -567,23 +562,26 @@ class AdminApi {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Update Category API Error ${response.statusCode}: ${response.body}');
+      throw Exception(
+        'Update Category API Error ${response.statusCode}: ${response.body}',
+      );
     }
   }
 
   Future<void> deactivateCategory(int categoryId) async {
-    final uri = Uri.parse('$baseUrl/admin/categories/$categoryId?tenant=$tenantCode');
+    final uri = Uri.parse(
+      '$baseUrl/admin/categories/$categoryId?tenant=$tenantCode',
+    );
 
     final response = await http.delete(
       uri,
-      headers: {
-        'Accept': 'application/json',
-        'X-Tenant-Code': tenantCode,
-      },
+      headers: {'Accept': 'application/json', 'X-Tenant-Code': tenantCode},
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Deactivate Category API Error ${response.statusCode}: ${response.body}');
+      throw Exception(
+        'Deactivate Category API Error ${response.statusCode}: ${response.body}',
+      );
     }
   }
 
@@ -591,7 +589,9 @@ class AdminApi {
     required List<int> bytes,
     required String fileName,
   }) async {
-    final uri = Uri.parse('$baseUrl/admin/uploads/product-image?tenant=$tenantCode');
+    final uri = Uri.parse(
+      '$baseUrl/admin/uploads/product-image?tenant=$tenantCode',
+    );
 
     final extension = fileName.contains('.')
         ? fileName.split('.').last.toLowerCase()
@@ -616,7 +616,9 @@ class AdminApi {
     final response = await http.Response.fromStream(streamed);
 
     if (response.statusCode != 200) {
-      throw Exception('Upload API Error ${response.statusCode}: ${response.body}');
+      throw Exception(
+        'Upload API Error ${response.statusCode}: ${response.body}',
+      );
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -634,16 +636,143 @@ class AdminApi {
         .replaceFirst('http://127.0.0.1', apiOrigin);
   }
 
-  Future<List<AdminTenant>> fetchTenants() async {
-    final uri = Uri.parse("$baseUrl/admin/tenants");
+  Future<List<AdminSlide>> fetchAdminSlides() async {
+    final uri = Uri.parse('$baseUrl/admin/slides?tenant=$tenantCode');
 
     final response = await http.get(
       uri,
-      headers: _jsonHeaders,
+      headers: {'Accept': 'application/json', 'X-Tenant-Code': tenantCode},
     );
 
     if (response.statusCode != 200) {
-      throw Exception("Tenants API Error ${response.statusCode}: ${response.body}");
+      throw Exception(
+        'Slides API Error ${response.statusCode}: ${response.body}',
+      );
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    final list = json['data'] as List<dynamic>? ?? [];
+
+    return list
+        .map((item) => AdminSlide.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<String> uploadSlideImage({
+    required List<int> bytes,
+    required String fileName,
+  }) async {
+    final uri = Uri.parse(
+      '$baseUrl/admin/uploads/slide-image?tenant=$tenantCode',
+    );
+
+    final extension = fileName.contains('.')
+        ? fileName.split('.').last.toLowerCase()
+        : 'jpg';
+    final subtype = extension == 'jpg' ? 'jpeg' : extension;
+
+    final request = http.MultipartRequest('POST', uri)
+      ..headers.addAll({
+        'Accept': 'application/json',
+        'X-Tenant-Code': tenantCode,
+      })
+      ..files.add(
+        http.MultipartFile.fromBytes(
+          'image',
+          bytes,
+          filename: fileName,
+          contentType: MediaType('image', subtype),
+        ),
+      );
+
+    final streamed = await request.send();
+    final response = await http.Response.fromStream(streamed);
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Slide Upload API Error ${response.statusCode}: ${response.body}',
+      );
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    final rawUrl = json['url']?.toString() ?? '';
+
+    if (rawUrl.isEmpty) {
+      return '';
+    }
+
+    final apiOrigin = Uri.parse(baseUrl).origin;
+
+    return rawUrl
+        .replaceFirst('http://localhost', apiOrigin)
+        .replaceFirst('http://127.0.0.1:8099', apiOrigin)
+        .replaceFirst('http://127.0.0.1', apiOrigin);
+  }
+
+  Future<void> createSlide(CreateSlideRequest request) async {
+    final uri = Uri.parse('$baseUrl/admin/slides?tenant=$tenantCode');
+
+    final response = await http.post(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-Tenant-Code': tenantCode,
+      },
+      body: jsonEncode(request.toJson()),
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception(
+        'Create Slide API Error ${response.statusCode}: ${response.body}',
+      );
+    }
+  }
+
+  Future<void> updateSlide(int slideId, CreateSlideRequest request) async {
+    final uri = Uri.parse('$baseUrl/admin/slides/$slideId?tenant=$tenantCode');
+
+    final response = await http.put(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-Tenant-Code': tenantCode,
+      },
+      body: jsonEncode(request.toJson()),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Update Slide API Error ${response.statusCode}: ${response.body}',
+      );
+    }
+  }
+
+  Future<void> deactivateSlide(int slideId) async {
+    final uri = Uri.parse('$baseUrl/admin/slides/$slideId?tenant=$tenantCode');
+
+    final response = await http.delete(
+      uri,
+      headers: {'Accept': 'application/json', 'X-Tenant-Code': tenantCode},
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Deactivate Slide API Error ${response.statusCode}: ${response.body}',
+      );
+    }
+  }
+
+  Future<List<AdminTenant>> fetchTenants() async {
+    final uri = Uri.parse("$baseUrl/admin/tenants");
+
+    final response = await http.get(uri, headers: _jsonHeaders);
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        "Tenants API Error ${response.statusCode}: ${response.body}",
+      );
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -696,7 +825,9 @@ class AdminApi {
     );
 
     if (response.statusCode != 201) {
-      throw Exception("Create Tenant API Error ${response.statusCode}: ${response.body}");
+      throw Exception(
+        "Create Tenant API Error ${response.statusCode}: ${response.body}",
+      );
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -706,13 +837,12 @@ class AdminApi {
   Future<List<AdminAccount>> fetchAccounts() async {
     final uri = Uri.parse('$baseUrl/admin/accounts');
 
-    final response = await http.get(
-      uri,
-      headers: _jsonHeaders,
-    );
+    final response = await http.get(uri, headers: _jsonHeaders);
 
     if (response.statusCode != 200) {
-      throw Exception('Accounts API Error ${response.statusCode}: ${response.body}');
+      throw Exception(
+        'Accounts API Error ${response.statusCode}: ${response.body}',
+      );
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -755,7 +885,9 @@ class AdminApi {
     );
 
     if (response.statusCode != 201) {
-      throw Exception('Create Account API Error ${response.statusCode}: ${response.body}');
+      throw Exception(
+        'Create Account API Error ${response.statusCode}: ${response.body}',
+      );
     }
   }
 
@@ -765,13 +897,13 @@ class AdminApi {
     final response = await http.patch(
       uri,
       headers: _jsonHeaders,
-      body: jsonEncode({
-        'is_active': isActive,
-      }),
+      body: jsonEncode({'is_active': isActive}),
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Update Account Status API Error ${response.statusCode}: ${response.body}');
+      throw Exception(
+        'Update Account Status API Error ${response.statusCode}: ${response.body}',
+      );
     }
   }
 
@@ -784,11 +916,7 @@ class AdminApi {
   }) async {
     final uri = Uri.parse('$baseUrl/admin/accounts/$accountId');
 
-    final body = <String, dynamic>{
-      'name': name,
-      'phone': phone,
-      'role': role,
-    };
+    final body = <String, dynamic>{'name': name, 'phone': phone, 'role': role};
 
     if (tenantId != null) {
       body['tenant_id'] = tenantId;
@@ -801,7 +929,9 @@ class AdminApi {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Update Account API Error ${response.statusCode}: ${response.body}');
+      throw Exception(
+        'Update Account API Error ${response.statusCode}: ${response.body}',
+      );
     }
   }
 
@@ -811,13 +941,13 @@ class AdminApi {
     final response = await http.patch(
       uri,
       headers: _jsonHeaders,
-      body: jsonEncode({
-        'password': password,
-      }),
+      body: jsonEncode({'password': password}),
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Update Account Password API Error ${response.statusCode}: ${response.body}');
+      throw Exception(
+        'Update Account Password API Error ${response.statusCode}: ${response.body}',
+      );
     }
   }
 
@@ -835,30 +965,39 @@ class AdminApi {
     );
 
     if (response.statusCode != 201) {
-      throw Exception('Create Product API Error ${response.statusCode}: ${response.body}');
+      throw Exception(
+        'Create Product API Error ${response.statusCode}: ${response.body}',
+      );
     }
   }
 
   Future<AdminProduct> fetchProduct(int productId) async {
-    final uri = Uri.parse('$baseUrl/admin/products/$productId?tenant=$tenantCode');
+    final uri = Uri.parse(
+      '$baseUrl/admin/products/$productId?tenant=$tenantCode',
+    );
 
     final response = await http.get(
       uri,
-      headers: {
-        'Accept': 'application/json',
-        'X-Tenant-Code': tenantCode,
-      },
+      headers: {'Accept': 'application/json', 'X-Tenant-Code': tenantCode},
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Product Details API Error ${response.statusCode}: ${response.body}');
+      throw Exception(
+        'Product Details API Error ${response.statusCode}: ${response.body}',
+      );
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
     return AdminProduct.fromJson(json['data'] as Map<String, dynamic>);
   }
-  Future<void> updateProduct(int productId, CreateProductRequest request) async {
-    final uri = Uri.parse('$baseUrl/admin/products/$productId?tenant=$tenantCode');
+
+  Future<void> updateProduct(
+    int productId,
+    CreateProductRequest request,
+  ) async {
+    final uri = Uri.parse(
+      '$baseUrl/admin/products/$productId?tenant=$tenantCode',
+    );
 
     final response = await http.put(
       uri,
@@ -871,22 +1010,24 @@ class AdminApi {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Update Product API Error ${response.statusCode}: ${response.body}');
+      throw Exception(
+        'Update Product API Error ${response.statusCode}: ${response.body}',
+      );
     }
   }
+
   Future<List<AdminOrder>> fetchOrders() async {
     final uri = Uri.parse('$baseUrl/admin/orders?tenant=$tenantCode');
 
     final response = await http.get(
       uri,
-      headers: {
-        'Accept': 'application/json',
-        'X-Tenant-Code': tenantCode,
-      },
+      headers: {'Accept': 'application/json', 'X-Tenant-Code': tenantCode},
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Orders API Error ${response.statusCode}: ${response.body}');
+      throw Exception(
+        'Orders API Error ${response.statusCode}: ${response.body}',
+      );
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -898,18 +1039,19 @@ class AdminApi {
   }
 
   Future<AdminOrder> fetchOrder(String orderNumber) async {
-    final uri = Uri.parse('$baseUrl/admin/orders/$orderNumber?tenant=$tenantCode');
+    final uri = Uri.parse(
+      '$baseUrl/admin/orders/$orderNumber?tenant=$tenantCode',
+    );
 
     final response = await http.get(
       uri,
-      headers: {
-        'Accept': 'application/json',
-        'X-Tenant-Code': tenantCode,
-      },
+      headers: {'Accept': 'application/json', 'X-Tenant-Code': tenantCode},
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Order Details API Error ${response.statusCode}: ${response.body}');
+      throw Exception(
+        'Order Details API Error ${response.statusCode}: ${response.body}',
+      );
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -917,7 +1059,9 @@ class AdminApi {
   }
 
   Future<void> updateOrderStatus(String orderNumber, String status) async {
-    final uri = Uri.parse('$baseUrl/orders/$orderNumber/status?tenant=$tenantCode');
+    final uri = Uri.parse(
+      '$baseUrl/orders/$orderNumber/status?tenant=$tenantCode',
+    );
 
     final response = await http.patch(
       uri,
@@ -926,13 +1070,13 @@ class AdminApi {
         'Content-Type': 'application/json',
         'X-Tenant-Code': tenantCode,
       },
-      body: jsonEncode({
-        'status': status,
-      }),
+      body: jsonEncode({'status': status}),
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Update Order Status API Error ${response.statusCode}: ${response.body}');
+      throw Exception(
+        'Update Order Status API Error ${response.statusCode}: ${response.body}',
+      );
     }
   }
 
@@ -941,14 +1085,13 @@ class AdminApi {
 
     final response = await http.get(
       uri,
-      headers: {
-        'Accept': 'application/json',
-        'X-Tenant-Code': tenantCode,
-      },
+      headers: {'Accept': 'application/json', 'X-Tenant-Code': tenantCode},
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Branding API Error ${response.statusCode}: ${response.body}');
+      throw Exception(
+        'Branding API Error ${response.statusCode}: ${response.body}',
+      );
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -957,7 +1100,9 @@ class AdminApi {
     );
   }
 
-  Future<AdminBrandingSettings> updateTenantBranding(AdminBrandingSettings settings) async {
+  Future<AdminBrandingSettings> updateTenantBranding(
+    AdminBrandingSettings settings,
+  ) async {
     final uri = Uri.parse('$baseUrl/admin/tenant-branding?tenant=$tenantCode');
 
     final response = await http.patch(
@@ -971,7 +1116,9 @@ class AdminApi {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Update Branding API Error ${response.statusCode}: ${response.body}');
+      throw Exception(
+        'Update Branding API Error ${response.statusCode}: ${response.body}',
+      );
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -980,19 +1127,18 @@ class AdminApi {
     );
   }
 
-
   Future<List<AdminPlan>> fetchPlans() async {
     final uri = Uri.parse('$baseUrl/admin/plans');
 
     final response = await http.get(
       uri,
-      headers: {
-        'Accept': 'application/json',
-      },
+      headers: {'Accept': 'application/json'},
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Plans API Error ${response.statusCode}: ${response.body}');
+      throw Exception(
+        'Plans API Error ${response.statusCode}: ${response.body}',
+      );
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -1008,13 +1154,13 @@ class AdminApi {
 
     final response = await http.get(
       uri,
-      headers: {
-        'Accept': 'application/json',
-      },
+      headers: {'Accept': 'application/json'},
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Feature Flags API Error ${response.statusCode}: ${response.body}');
+      throw Exception(
+        'Feature Flags API Error ${response.statusCode}: ${response.body}',
+      );
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -1025,7 +1171,9 @@ class AdminApi {
         .toList();
   }
 
-  Future<List<AdminFeatureFlag>> updateFeatureFlags(Map<String, bool> features) async {
+  Future<List<AdminFeatureFlag>> updateFeatureFlags(
+    Map<String, bool> features,
+  ) async {
     final uri = Uri.parse('$baseUrl/admin/feature-flags?tenant=$tenantCode');
 
     final response = await http.patch(
@@ -1034,13 +1182,13 @@ class AdminApi {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode({
-        'features': features,
-      }),
+      body: jsonEncode({'features': features}),
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Update Feature Flags API Error ${response.statusCode}: ${response.body}');
+      throw Exception(
+        'Update Feature Flags API Error ${response.statusCode}: ${response.body}',
+      );
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -1158,7 +1306,7 @@ class CreateProductVariantInput {
           'quantity': quantity,
           'reserved_quantity': 0,
           'low_stock_alert_quantity': 1,
-        }
+        },
       ],
     };
 
@@ -1214,10 +1362,7 @@ class CreateProductRequest {
 
     if (mainImageUrl != null && mainImageUrl!.trim().isNotEmpty) {
       body['images'] = [
-        {
-          'image_url': mainImageUrl,
-          'sort_order': 1,
-        }
+        {'image_url': mainImageUrl, 'sort_order': 1},
       ];
     }
 
@@ -1230,7 +1375,7 @@ class CreateProductRequest {
           'quantity': quantity,
           'reserved_quantity': 0,
           'low_stock_alert_quantity': 2,
-        }
+        },
       ];
     }
 
@@ -1299,7 +1444,9 @@ class AdminProduct {
     int quantityForVariant(int variantId) {
       for (final item in inventoryJson) {
         if (item is Map<String, dynamic>) {
-          final itemVariantId = int.tryParse(item['variant_id']?.toString() ?? '');
+          final itemVariantId = int.tryParse(
+            item['variant_id']?.toString() ?? '',
+          );
           if (itemVariantId == variantId) {
             return int.tryParse(item['quantity']?.toString() ?? '0') ?? 0;
           }
@@ -1309,25 +1456,24 @@ class AdminProduct {
       return 0;
     }
 
-    final parsedVariants = variantsJson
-        .whereType<Map<String, dynamic>>()
-        .map((variant) {
-          final id = int.tryParse(variant['id']?.toString() ?? '0') ?? 0;
+    final parsedVariants = variantsJson.whereType<Map<String, dynamic>>().map((
+      variant,
+    ) {
+      final id = int.tryParse(variant['id']?.toString() ?? '0') ?? 0;
 
-          return AdminProductVariant(
-            id: id,
-            name: variant['name']?.toString() ?? '',
-            sku: variant['sku']?.toString(),
-            price: variant['price'] == null
-                ? null
-                : double.tryParse(variant['price'].toString()),
-            salePrice: variant['sale_price'] == null
-                ? null
-                : double.tryParse(variant['sale_price'].toString()),
-            quantity: quantityForVariant(id),
-          );
-        })
-        .toList();
+      return AdminProductVariant(
+        id: id,
+        name: variant['name']?.toString() ?? '',
+        sku: variant['sku']?.toString(),
+        price: variant['price'] == null
+            ? null
+            : double.tryParse(variant['price'].toString()),
+        salePrice: variant['sale_price'] == null
+            ? null
+            : double.tryParse(variant['sale_price'].toString()),
+        quantity: quantityForVariant(id),
+      );
+    }).toList();
 
     return AdminProduct(
       id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
@@ -1338,7 +1484,8 @@ class AdminProduct {
       salePrice: json['sale_price'] == null
           ? null
           : double.tryParse(json['sale_price'].toString()),
-      availableQuantity: int.tryParse(json['available_quantity']?.toString() ?? '0') ?? 0,
+      availableQuantity:
+          int.tryParse(json['available_quantity']?.toString() ?? '0') ?? 0,
       status: json['status']?.toString() ?? '',
       hasVariants: json['has_variants'] == true || parsedVariants.isNotEmpty,
       isFeatured: json['is_featured'] == true,
@@ -1396,7 +1543,9 @@ class AdminOrderItem {
     return AdminOrderItem(
       id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
       productId: int.tryParse(json['product_id']?.toString() ?? '0') ?? 0,
-      productVariantId: int.tryParse(json['product_variant_id']?.toString() ?? ''),
+      productVariantId: int.tryParse(
+        json['product_variant_id']?.toString() ?? '',
+      ),
       productName: json['product_name']?.toString() ?? '',
       variantName: json['variant_name']?.toString(),
       sku: json['sku']?.toString(),
@@ -1473,7 +1622,8 @@ class AdminOrder {
       paymentStatus: json['payment_status']?.toString() ?? '',
       subtotal: double.tryParse(json['subtotal']?.toString() ?? '0') ?? 0,
       discount: double.tryParse(json['discount']?.toString() ?? '0') ?? 0,
-      deliveryFee: double.tryParse(json['delivery_fee']?.toString() ?? '0') ?? 0,
+      deliveryFee:
+          double.tryParse(json['delivery_fee']?.toString() ?? '0') ?? 0,
       total: double.tryParse(json['total']?.toString() ?? '0') ?? 0,
       customerName: customer['name']?.toString() ?? '',
       customerPhone: customer['phone']?.toString() ?? '',
@@ -1559,8 +1709,8 @@ class AdminOrder {
         (deliveryCity ?? '').toLowerCase().contains(q) ||
         (deliveryAddress ?? '').toLowerCase().contains(q);
   }
-
 }
+
 class AdminTenant {
   const AdminTenant({
     required this.id,
@@ -1621,7 +1771,9 @@ class AdminAccount {
       phone: json['phone']?.toString() ?? '',
       role: json['role']?.toString() ?? '',
       isActive: json['is_active'] == true || json['is_active'] == 1,
-      tenantName: tenant is Map<String, dynamic> ? tenant['name']?.toString() : null,
+      tenantName: tenant is Map<String, dynamic>
+          ? tenant['name']?.toString()
+          : null,
     );
   }
 
@@ -1645,12 +1797,12 @@ class AdminAccount {
   String get statusLabel => isActive ? 'فعال' : 'معطل';
 }
 
-
 class CategoriesDashboardPage extends StatefulWidget {
   const CategoriesDashboardPage({super.key});
 
   @override
-  State<CategoriesDashboardPage> createState() => _CategoriesDashboardPageState();
+  State<CategoriesDashboardPage> createState() =>
+      _CategoriesDashboardPageState();
 }
 
 class _CategoriesDashboardPageState extends State<CategoriesDashboardPage> {
@@ -1683,9 +1835,15 @@ class _CategoriesDashboardPageState extends State<CategoriesDashboardPage> {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(text: category?.name ?? '');
     final slugController = TextEditingController(text: category?.slug ?? '');
-    final descriptionController = TextEditingController(text: category?.description ?? '');
-    final imageUrlController = TextEditingController(text: category?.imageUrl ?? '');
-    final sortOrderController = TextEditingController(text: (category?.sortOrder ?? 0).toString());
+    final descriptionController = TextEditingController(
+      text: category?.description ?? '',
+    );
+    final imageUrlController = TextEditingController(
+      text: category?.imageUrl ?? '',
+    );
+    final sortOrderController = TextEditingController(
+      text: (category?.sortOrder ?? 0).toString(),
+    );
     var status = category?.status ?? 'active';
     var saving = false;
 
@@ -1695,99 +1853,148 @@ class _CategoriesDashboardPageState extends State<CategoriesDashboardPage> {
         builder: (dialogContext) {
           return StatefulBuilder(
             builder: (context, setDialogState) {
-              return Directionality(textDirection: TextDirection.rtl, child: AlertDialog(
-                title: Text(category == null ? 'إضافة قسم' : 'تعديل قسم'),
-                content: SizedBox(
-                  width: 440,
-                  child: Form(
-                    key: formKey,
-                    child: SingleChildScrollView(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          TextFormField(
-                            controller: nameController,
-                            decoration: const InputDecoration(labelText: 'اسم القسم'),
-                            validator: (value) => value == null || value.trim().isEmpty ? 'مطلوب' : null,
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: slugController,
-                            decoration: const InputDecoration(labelText: 'كود القسم اختياري'),
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: descriptionController,
-                            maxLines: 3,
-                            decoration: const InputDecoration(labelText: 'الوصف اختياري'),
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: sortOrderController,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(labelText: 'الترتيب'),
-                          ),
-                          const SizedBox(height: 12),
-                          DropdownButtonFormField<String>(
-                            value: status,
-                            decoration: const InputDecoration(labelText: 'الحالة'),
-                            items: const [
-                              DropdownMenuItem(value: 'active', child: Text('فعال')),
-                              DropdownMenuItem(value: 'inactive', child: Text('غير فعال')),
-                            ],
-                            onChanged: saving ? null : (value) => setDialogState(() => status = value ?? 'active'),
-                          ),
-                        ],
+              return Directionality(
+                textDirection: TextDirection.rtl,
+                child: AlertDialog(
+                  title: Text(category == null ? 'إضافة قسم' : 'تعديل قسم'),
+                  content: SizedBox(
+                    width: 440,
+                    child: Form(
+                      key: formKey,
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            TextFormField(
+                              controller: nameController,
+                              decoration: const InputDecoration(
+                                labelText: 'اسم القسم',
+                              ),
+                              validator: (value) =>
+                                  value == null || value.trim().isEmpty
+                                  ? 'مطلوب'
+                                  : null,
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: slugController,
+                              decoration: const InputDecoration(
+                                labelText: 'كود القسم اختياري',
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: descriptionController,
+                              maxLines: 3,
+                              decoration: const InputDecoration(
+                                labelText: 'الوصف اختياري',
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: sortOrderController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'الترتيب',
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            DropdownButtonFormField<String>(
+                              value: status,
+                              decoration: const InputDecoration(
+                                labelText: 'الحالة',
+                              ),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: 'active',
+                                  child: Text('فعال'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'inactive',
+                                  child: Text('غير فعال'),
+                                ),
+                              ],
+                              onChanged: saving
+                                  ? null
+                                  : (value) => setDialogState(
+                                      () => status = value ?? 'active',
+                                    ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
+                  actions: [
+                    TextButton(
+                      onPressed: saving
+                          ? null
+                          : () => Navigator.of(dialogContext).pop(false),
+                      child: const Text('إلغاء'),
+                    ),
+                    FilledButton.icon(
+                      onPressed: saving
+                          ? null
+                          : () async {
+                              if (!(formKey.currentState?.validate() ??
+                                  false)) {
+                                return;
+                              }
+
+                              final request = CreateCategoryRequest(
+                                name: nameController.text.trim(),
+                                slug: slugController.text.trim().isEmpty
+                                    ? null
+                                    : slugController.text.trim(),
+                                description:
+                                    descriptionController.text.trim().isEmpty
+                                    ? null
+                                    : descriptionController.text.trim(),
+                                imageUrl: null,
+                                sortOrder:
+                                    int.tryParse(
+                                      sortOrderController.text.trim(),
+                                    ) ??
+                                    0,
+                                status: status,
+                              );
+
+                              setDialogState(() => saving = true);
+
+                              try {
+                                if (category == null) {
+                                  await _api.createCategory(request);
+                                } else {
+                                  await _api.updateCategory(
+                                    category.id,
+                                    request,
+                                  );
+                                }
+
+                                if (dialogContext.mounted) {
+                                  Navigator.of(dialogContext).pop(true);
+                                }
+                              } catch (error) {
+                                setDialogState(() => saving = false);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(error.toString())),
+                                  );
+                                }
+                              }
+                            },
+                      icon: saving
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.save_outlined),
+                      label: Text(saving ? 'جاري الحفظ' : 'حفظ'),
+                    ),
+                  ],
                 ),
-                actions: [
-                  TextButton(
-                    onPressed: saving ? null : () => Navigator.of(dialogContext).pop(false),
-                    child: const Text('إلغاء'),
-                  ),
-                  FilledButton.icon(
-                    onPressed: saving
-                        ? null
-                        : () async {
-                            if (!(formKey.currentState?.validate() ?? false)) return;
-
-                            final request = CreateCategoryRequest(
-                              name: nameController.text.trim(),
-                              slug: slugController.text.trim().isEmpty ? null : slugController.text.trim(),
-                              description: descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
-                              imageUrl: null,
-                              sortOrder: int.tryParse(sortOrderController.text.trim()) ?? 0,
-                              status: status,
-                            );
-
-                            setDialogState(() => saving = true);
-
-                            try {
-                              if (category == null) {
-                                await _api.createCategory(request);
-                              } else {
-                                await _api.updateCategory(category.id, request);
-                              }
-
-                              if (dialogContext.mounted) {
-                                Navigator.of(dialogContext).pop(true);
-                              }
-                            } catch (error) {
-                              setDialogState(() => saving = false);
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
-                              }
-                            }
-                          },
-                    icon: saving
-                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.save_outlined),
-                    label: Text(saving ? 'جاري الحفظ' : 'حفظ'),
-                  ),
-                ],
-              ));
+              );
             },
           );
         },
@@ -1796,7 +2003,11 @@ class _CategoriesDashboardPageState extends State<CategoriesDashboardPage> {
       if (saved == true) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(category == null ? 'تم إضافة القسم' : 'تم تعديل القسم')),
+          SnackBar(
+            content: Text(
+              category == null ? 'تم إضافة القسم' : 'تم تعديل القسم',
+            ),
+          ),
         );
         await _reload();
       }
@@ -1833,11 +2044,15 @@ class _CategoriesDashboardPageState extends State<CategoriesDashboardPage> {
     try {
       await _api.deactivateCategory(category.id);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تعطيل القسم')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تم تعطيل القسم')));
       await _reload();
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
     }
   }
 
@@ -1857,12 +2072,19 @@ class _CategoriesDashboardPageState extends State<CategoriesDashboardPage> {
               return ListView(
                 padding: const EdgeInsets.all(24),
                 children: [
-                  Card(child: Padding(padding: const EdgeInsets.all(18), child: Text(snapshot.error.toString()))),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(18),
+                      child: Text(snapshot.error.toString()),
+                    ),
+                  ),
                 ],
               );
             }
 
-            final categories = (snapshot.data ?? []).where((category) => category.matches(_search)).toList();
+            final categories = (snapshot.data ?? [])
+                .where((category) => category.matches(_search))
+                .toList();
 
             return ListView(
               padding: EdgeInsets.all(isMobile ? 16 : 28),
@@ -1872,42 +2094,68 @@ class _CategoriesDashboardPageState extends State<CategoriesDashboardPage> {
                     const Expanded(
                       child: Text(
                         'الأقسام',
-                        style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF0F172A),
+                        ),
                       ),
                     ),
-                    IconButton(onPressed: _reload, icon: const Icon(Icons.refresh)),
+                    IconButton(
+                      onPressed: _reload,
+                      icon: const Icon(Icons.refresh),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 const Text(
                   'إدارة أقسام المتجر الحالي.',
-                  style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 18),
                 TextField(
                   controller: _searchController,
-                  decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'بحث عن قسم'),
+                  decoration: const InputDecoration(
+                    prefixIcon: Icon(Icons.search),
+                    hintText: 'بحث عن قسم',
+                  ),
                   onChanged: (value) => setState(() => _search = value),
                 ),
                 const SizedBox(height: 18),
                 if (categories.isEmpty)
-                  const Card(child: Padding(padding: EdgeInsets.all(24), child: Center(child: Text('لا توجد أقسام'))))
+                  const Card(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Center(child: Text('لا توجد أقسام')),
+                    ),
+                  )
                 else
                   ...categories.map((category) {
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
                       child: ListTile(
-                        title: Text(category.name, style: const TextStyle(fontWeight: FontWeight.w900)),
+                        title: Text(
+                          category.name,
+                          style: const TextStyle(fontWeight: FontWeight.w900),
+                        ),
                         subtitle: Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Wrap(
                             spacing: 8,
                             runSpacing: 8,
                             children: [
-                              MiniTag(category.slug.isEmpty ? 'بدون رابط' : category.slug),
+                              MiniTag(
+                                category.slug.isEmpty
+                                    ? 'بدون رابط'
+                                    : category.slug,
+                              ),
                               MiniTag(category.statusLabel),
                               MiniTag('ترتيب: ${category.sortOrder}'),
-                              if ((category.description ?? '').isNotEmpty) MiniTag(category.description!),
+                              if ((category.description ?? '').isNotEmpty)
+                                MiniTag(category.description!),
                             ],
                           ),
                         ),
@@ -1916,12 +2164,15 @@ class _CategoriesDashboardPageState extends State<CategoriesDashboardPage> {
                                 spacing: 6,
                                 children: [
                                   IconButton(
-                                    onPressed: () => _openCategoryDialog(category),
+                                    onPressed: () =>
+                                        _openCategoryDialog(category),
                                     icon: const Icon(Icons.edit_outlined),
                                     tooltip: 'تعديل',
                                   ),
                                   IconButton(
-                                    onPressed: category.isActive ? () => _deactivate(category) : null,
+                                    onPressed: category.isActive
+                                        ? () => _deactivate(category)
+                                        : null,
                                     icon: const Icon(Icons.block_outlined),
                                     tooltip: 'تعطيل',
                                   ),
@@ -1945,17 +2196,25 @@ class _CategoriesDashboardPageState extends State<CategoriesDashboardPage> {
 
     if (isMobile) {
       return Scaffold(
-        drawer: const Drawer(child: AdminSidebar(isDrawer: true, selectedSection: 'categories')),
+        drawer: const Drawer(
+          child: AdminSidebar(isDrawer: true, selectedSection: 'categories'),
+        ),
         appBar: AppBar(
           title: const Text('الأقسام'),
           backgroundColor: const Color(0xFF0F172A),
           foregroundColor: Colors.white,
           actions: [
             if (CurrentAdminSession.canManageProducts)
-              IconButton(onPressed: () => _openCategoryDialog(), icon: const Icon(Icons.add)),
+              IconButton(
+                onPressed: () => _openCategoryDialog(),
+                icon: const Icon(Icons.add),
+              ),
           ],
         ),
-        body: Directionality(textDirection: TextDirection.rtl, child: _content(isMobile: true)),
+        body: Directionality(
+          textDirection: TextDirection.rtl,
+          child: _content(isMobile: true),
+        ),
         floatingActionButton: CurrentAdminSession.canManageProducts
             ? FloatingActionButton.extended(
                 onPressed: () => _openCategoryDialog(),
@@ -1972,7 +2231,12 @@ class _CategoriesDashboardPageState extends State<CategoriesDashboardPage> {
         textDirection: TextDirection.rtl,
         children: [
           const AdminSidebar(selectedSection: 'categories'),
-          Expanded(child: Directionality(textDirection: TextDirection.rtl, child: _content(isMobile: false))),
+          Expanded(
+            child: Directionality(
+              textDirection: TextDirection.rtl,
+              child: _content(isMobile: false),
+            ),
+          ),
         ],
       ),
       floatingActionButton: CurrentAdminSession.canManageProducts
@@ -2023,7 +2287,6 @@ class _ProductsDashboardPageState extends State<ProductsDashboardPage> {
     });
   }
 
-
   Future<void> _openAddProductDialog() async {
     final created = await showDialog<bool>(
       context: context,
@@ -2038,9 +2301,9 @@ class _ProductsDashboardPageState extends State<ProductsDashboardPage> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تمت إضافة المنتج بنجاح')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تمت إضافة المنتج بنجاح')));
     }
   }
 
@@ -2048,10 +2311,7 @@ class _ProductsDashboardPageState extends State<ProductsDashboardPage> {
     final updated = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AddProductDialog(
-        api: _api,
-        product: product,
-      ),
+      builder: (context) => AddProductDialog(api: _api, product: product),
     );
 
     if (updated == true) {
@@ -2061,9 +2321,9 @@ class _ProductsDashboardPageState extends State<ProductsDashboardPage> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم تحديث المنتج بنجاح')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تم تحديث المنتج بنجاح')));
     }
   }
 
@@ -2192,14 +2452,17 @@ class DashboardBody extends StatelessWidget {
                 }
 
                 final allProducts = snapshot.data ?? [];
-                final products = allProducts.where((p) => p.matches(search)).toList();
+                final products = allProducts
+                    .where((p) => p.matches(search))
+                    .toList();
 
-                                if (isMobile) {
+                if (isMobile) {
                   return RefreshIndicator(
                     onRefresh: () async => onReload(),
                     child: ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
                       padding: EdgeInsets.zero,
                       children: [
                         Padding(
@@ -2240,7 +2503,12 @@ class DashboardBody extends StatelessWidget {
                         else
                           ...products.map(
                             (product) => Padding(
-                              padding: EdgeInsets.fromLTRB(padding, 0, padding, 12),
+                              padding: EdgeInsets.fromLTRB(
+                                padding,
+                                0,
+                                padding,
+                                12,
+                              ),
                               child: MobileProductCard(
                                 product: product,
                                 onEdit: () => onEdit(product),
@@ -2289,9 +2557,15 @@ class DashboardBody extends StatelessWidget {
                       child: products.isEmpty
                           ? const EmptyProducts()
                           : ListView.separated(
-                              padding: EdgeInsets.fromLTRB(padding, 0, padding, 32),
+                              padding: EdgeInsets.fromLTRB(
+                                padding,
+                                0,
+                                padding,
+                                32,
+                              ),
                               itemCount: products.length,
-                              separatorBuilder: (_, __) => const SizedBox(height: 12),
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 12),
                               itemBuilder: (context, index) {
                                 final product = products[index];
 
@@ -2371,8 +2645,13 @@ class DashboardHeader extends StatelessWidget {
                   onPressed: onReload,
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
-                    side: BorderSide(color: Colors.white.withValues(alpha: 0.4)),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    side: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.4),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
                   ),
                   icon: const Icon(Icons.refresh),
                   label: const Text('تحديث'),
@@ -2384,7 +2663,10 @@ class DashboardHeader extends StatelessWidget {
                     style: FilledButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: const Color(0xFF0F172A),
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 16,
+                      ),
                     ),
                     icon: const Icon(Icons.add),
                     label: const Text('إضافة منتج'),
@@ -2441,7 +2723,10 @@ class HeaderSearch extends StatelessWidget {
         prefixIcon: const Icon(Icons.search),
         filled: true,
         fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 14,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide.none,
@@ -2466,14 +2751,33 @@ class SummaryGrid extends StatelessWidget {
     final active = products.where((p) => p.isActive).length;
     final withVariants = products.where((p) => p.hasVariants).length;
     final lowStock = products.where((p) => p.isLowStock).length;
-    final totalStock = products.fold<int>(0, (sum, p) => sum + p.availableQuantity);
+    final totalStock = products.fold<int>(
+      0,
+      (sum, p) => sum + p.availableQuantity,
+    );
 
     final cards = [
-      SummaryData('عدد المنتجات', products.length.toString(), Icons.inventory_2_outlined),
-      SummaryData('منتجات فعالة', active.toString(), Icons.check_circle_outline),
+      SummaryData(
+        'عدد المنتجات',
+        products.length.toString(),
+        Icons.inventory_2_outlined,
+      ),
+      SummaryData(
+        'منتجات فعالة',
+        active.toString(),
+        Icons.check_circle_outline,
+      ),
       SummaryData('بخيارات', withVariants.toString(), Icons.tune),
-      SummaryData('تنبيه مخزون', lowStock.toString(), Icons.warning_amber_rounded),
-      SummaryData('المخزون المتاح', totalStock.toString(), Icons.warehouse_outlined),
+      SummaryData(
+        'تنبيه مخزون',
+        lowStock.toString(),
+        Icons.warning_amber_rounded,
+      ),
+      SummaryData(
+        'المخزون المتاح',
+        totalStock.toString(),
+        Icons.warehouse_outlined,
+      ),
     ];
 
     return LayoutBuilder(
@@ -2508,11 +2812,7 @@ class SummaryData {
 }
 
 class SummaryCard extends StatelessWidget {
-  const SummaryCard({
-    super.key,
-    required this.data,
-    required this.compact,
-  });
+  const SummaryCard({super.key, required this.data, required this.compact});
 
   final SummaryData data;
   final bool compact;
@@ -2575,11 +2875,10 @@ class DesktopProductRow extends StatelessWidget {
         children: [
           ProductImage(product: product, size: 64),
           const SizedBox(width: 16),
+          Expanded(flex: 4, child: ProductInfo(product: product, maxLines: 1)),
           Expanded(
-            flex: 4,
-            child: ProductInfo(product: product, maxLines: 1),
+            child: InfoBlock(title: 'السعر', value: product.priceText),
           ),
-          Expanded(child: InfoBlock(title: 'السعر', value: product.priceText)),
           Expanded(
             child: InfoBlock(
               title: 'المخزون',
@@ -2590,7 +2889,9 @@ class DesktopProductRow extends StatelessWidget {
           Expanded(
             child: InfoBlock(
               title: 'الخيارات',
-              value: product.variantsCount == 0 ? '-' : product.variantsCount.toString(),
+              value: product.variantsCount == 0
+                  ? '-'
+                  : product.variantsCount.toString(),
             ),
           ),
           StatusChip(status: product.status),
@@ -2635,7 +2936,9 @@ class MobileProductCard extends StatelessWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              Expanded(child: MetricBox(title: 'السعر', value: product.priceText)),
+              Expanded(
+                child: MetricBox(title: 'السعر', value: product.priceText),
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: MetricBox(
@@ -2648,7 +2951,9 @@ class MobileProductCard extends StatelessWidget {
               Expanded(
                 child: MetricBox(
                   title: 'الخيارات',
-                  value: product.variantsCount == 0 ? '-' : product.variantsCount.toString(),
+                  value: product.variantsCount == 0
+                      ? '-'
+                      : product.variantsCount.toString(),
                 ),
               ),
             ],
@@ -2673,11 +2978,7 @@ class MobileProductCard extends StatelessWidget {
 }
 
 class ProductImage extends StatelessWidget {
-  const ProductImage({
-    super.key,
-    required this.product,
-    required this.size,
-  });
+  const ProductImage({super.key, required this.product, required this.size});
 
   final AdminProduct product;
   final double size;
@@ -2701,7 +3002,10 @@ class ProductImage extends StatelessWidget {
               imageUrl,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) {
-                return const Icon(Icons.inventory_2_outlined, color: Color(0xFF0F172A));
+                return const Icon(
+                  Icons.inventory_2_outlined,
+                  color: Color(0xFF0F172A),
+                );
               },
             ),
     );
@@ -2709,11 +3013,7 @@ class ProductImage extends StatelessWidget {
 }
 
 class ProductInfo extends StatelessWidget {
-  const ProductInfo({
-    super.key,
-    required this.product,
-    required this.maxLines,
-  });
+  const ProductInfo({super.key, required this.product, required this.maxLines});
 
   final AdminProduct product;
   final int maxLines;
@@ -2741,7 +3041,8 @@ class ProductInfo extends StatelessWidget {
             MiniTag(product.categoryName ?? 'بدون قسم'),
             MiniTag(product.hasVariants ? 'خيارات' : 'منتج مفرد'),
             if (product.isFeatured) const MiniTag('مميز'),
-            if (product.sku != null && product.sku!.isNotEmpty) MiniTag(product.sku!),
+            if (product.sku != null && product.sku!.isNotEmpty)
+              MiniTag(product.sku!),
           ],
         ),
       ],
@@ -2923,9 +3224,7 @@ class _AdminSidebarState extends State<AdminSidebar> {
     }
 
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => const ProductsDashboardPage(),
-      ),
+      MaterialPageRoute(builder: (_) => const ProductsDashboardPage()),
     );
   }
 
@@ -2938,9 +3237,7 @@ class _AdminSidebarState extends State<AdminSidebar> {
     }
 
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => const CategoriesDashboardPage(),
-      ),
+      MaterialPageRoute(builder: (_) => const CategoriesDashboardPage()),
     );
   }
 
@@ -2953,13 +3250,9 @@ class _AdminSidebarState extends State<AdminSidebar> {
     }
 
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => const OrdersDashboardPage(),
-      ),
+      MaterialPageRoute(builder: (_) => const OrdersDashboardPage()),
     );
   }
-
-
 
   void _openAccounts(BuildContext context) {
     if (widget.selectedSection == 'accounts') {
@@ -2970,9 +3263,7 @@ class _AdminSidebarState extends State<AdminSidebar> {
     }
 
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => const AccountsDashboardPage(),
-      ),
+      MaterialPageRoute(builder: (_) => const AccountsDashboardPage()),
     );
   }
 
@@ -2985,9 +3276,7 @@ class _AdminSidebarState extends State<AdminSidebar> {
     }
 
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => const CommercialSettingsPage(),
-      ),
+      MaterialPageRoute(builder: (_) => const CommercialSettingsPage()),
     );
   }
 
@@ -3000,12 +3289,9 @@ class _AdminSidebarState extends State<AdminSidebar> {
     }
 
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => const BrandingSettingsPage(),
-      ),
+      MaterialPageRoute(builder: (_) => const BrandingSettingsPage()),
     );
   }
-
 
   Future<void> _openCreateTenantDialog(BuildContext context) async {
     final formKey = GlobalKey<FormState>();
@@ -3035,47 +3321,186 @@ class _AdminSidebarState extends State<AdminSidebar> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          TextFormField(controller: nameController, decoration: const InputDecoration(labelText: "اسم المتجر"), validator: (value) => value == null || value.trim().isEmpty ? "مطلوب" : null),
+                          TextFormField(
+                            controller: nameController,
+                            decoration: const InputDecoration(
+                              labelText: "اسم المتجر",
+                            ),
+                            validator: (value) =>
+                                value == null || value.trim().isEmpty
+                                ? "مطلوب"
+                                : null,
+                          ),
                           const SizedBox(height: 12),
-                          TextFormField(controller: codeController, decoration: const InputDecoration(labelText: "كود المتجر مثل: client-store"), validator: (value) { final text = value?.trim() ?? ""; if (text.isEmpty) return "مطلوب"; if (!RegExp(r"^[A-Za-z0-9_-]+$").hasMatch(text)) return "استخدم حروف إنكليزية وأرقام و - أو _ فقط"; return null; }),
+                          TextFormField(
+                            controller: codeController,
+                            decoration: const InputDecoration(
+                              labelText: "كود المتجر مثل: client-store",
+                            ),
+                            validator: (value) {
+                              final text = value?.trim() ?? "";
+                              if (text.isEmpty) return "مطلوب";
+                              if (!RegExp(r"^[A-Za-z0-9_-]+$").hasMatch(text)) {
+                                return "استخدم حروف إنكليزية وأرقام و - أو _ فقط";
+                              }
+                              return null;
+                            },
+                          ),
                           const SizedBox(height: 12),
-                          TextFormField(controller: appNameController, decoration: const InputDecoration(labelText: "اسم التطبيق"), validator: (value) => null),
+                          TextFormField(
+                            controller: appNameController,
+                            decoration: const InputDecoration(
+                              labelText: "اسم التطبيق",
+                            ),
+                            validator: (value) => null,
+                          ),
                           const SizedBox(height: 12),
-                          DropdownButtonFormField<String>(value: businessType, decoration: const InputDecoration(labelText: "نوع النشاط"), items: const [DropdownMenuItem(value: "general", child: Text("عام")), DropdownMenuItem(value: "fashion", child: Text("ملابس")), DropdownMenuItem(value: "electronics", child: Text("أجهزة")), DropdownMenuItem(value: "pharmacy", child: Text("صيدلية")), DropdownMenuItem(value: "beauty", child: Text("عطور وتجميل")), DropdownMenuItem(value: "petshop", child: Text("Petshop")), DropdownMenuItem(value: "grocery", child: Text("مواد غذائية")), DropdownMenuItem(value: "home", child: Text("أدوات منزلية"))], onChanged: saving ? null : (value) => setDialogState(() => businessType = value ?? "general")),
+                          DropdownButtonFormField<String>(
+                            value: businessType,
+                            decoration: const InputDecoration(
+                              labelText: "نوع النشاط",
+                            ),
+                            items: const [
+                              DropdownMenuItem(
+                                value: "general",
+                                child: Text("عام"),
+                              ),
+                              DropdownMenuItem(
+                                value: "fashion",
+                                child: Text("ملابس"),
+                              ),
+                              DropdownMenuItem(
+                                value: "electronics",
+                                child: Text("أجهزة"),
+                              ),
+                              DropdownMenuItem(
+                                value: "pharmacy",
+                                child: Text("صيدلية"),
+                              ),
+                              DropdownMenuItem(
+                                value: "beauty",
+                                child: Text("عطور وتجميل"),
+                              ),
+                              DropdownMenuItem(
+                                value: "petshop",
+                                child: Text("Petshop"),
+                              ),
+                              DropdownMenuItem(
+                                value: "grocery",
+                                child: Text("مواد غذائية"),
+                              ),
+                              DropdownMenuItem(
+                                value: "home",
+                                child: Text("أدوات منزلية"),
+                              ),
+                            ],
+                            onChanged: saving
+                                ? null
+                                : (value) => setDialogState(
+                                    () => businessType = value ?? "general",
+                                  ),
+                          ),
                           const SizedBox(height: 12),
-                          TextFormField(controller: ownerNameController, decoration: const InputDecoration(labelText: "اسم المالك اختياري")),
+                          TextFormField(
+                            controller: ownerNameController,
+                            decoration: const InputDecoration(
+                              labelText: "اسم المالك اختياري",
+                            ),
+                          ),
                           const SizedBox(height: 12),
-                          TextFormField(controller: phoneController, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: "رقم الهاتف اختياري")),
+                          TextFormField(
+                            controller: phoneController,
+                            keyboardType: TextInputType.phone,
+                            decoration: const InputDecoration(
+                              labelText: "رقم الهاتف اختياري",
+                            ),
+                          ),
                           const SizedBox(height: 12),
-                          TextFormField(controller: emailController, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: "الإيميل اختياري")),
+                          TextFormField(
+                            controller: emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            decoration: const InputDecoration(
+                              labelText: "الإيميل اختياري",
+                            ),
+                          ),
                           const SizedBox(height: 12),
-                          DropdownButtonFormField<String>(value: status, decoration: const InputDecoration(labelText: "الحالة"), items: const [DropdownMenuItem(value: "active", child: Text("فعال")), DropdownMenuItem(value: "inactive", child: Text("غير فعال"))], onChanged: saving ? null : (value) => setDialogState(() => status = value ?? "active")),
+                          DropdownButtonFormField<String>(
+                            value: status,
+                            decoration: const InputDecoration(
+                              labelText: "الحالة",
+                            ),
+                            items: const [
+                              DropdownMenuItem(
+                                value: "active",
+                                child: Text("فعال"),
+                              ),
+                              DropdownMenuItem(
+                                value: "inactive",
+                                child: Text("غير فعال"),
+                              ),
+                            ],
+                            onChanged: saving
+                                ? null
+                                : (value) => setDialogState(
+                                    () => status = value ?? "active",
+                                  ),
+                          ),
                         ],
                       ),
                     ),
                   ),
                 ),
                 actions: [
-                  TextButton(onPressed: saving ? null : () => Navigator.of(dialogContext).pop(), child: const Text("إلغاء")),
+                  TextButton(
+                    onPressed: saving
+                        ? null
+                        : () => Navigator.of(dialogContext).pop(),
+                    child: const Text("إلغاء"),
+                  ),
                   FilledButton.icon(
-                    onPressed: saving ? null : () async {
-                      if (!(formKey.currentState?.validate() ?? false)) return;
-                      final navigator = Navigator.of(dialogContext);
-                      final messenger = ScaffoldMessenger.of(context);
-                      setDialogState(() => saving = true);
-                      try {
-                        final tenant = await _api.createTenant(name: nameController.text.trim(), code: codeController.text.trim(), businessType: businessType, ownerName: ownerNameController.text.trim(), phone: phoneController.text.trim(), email: emailController.text.trim(), status: status, appName: appNameController.text.trim());
-                        if (!mounted) return;
-                        TenantSelectionSession.save(tenant);
-                        navigator.pop();
-                        messenger.showSnackBar(const SnackBar(content: Text("تم إنشاء المتجر بنجاح")));
-                        html.window.location.reload();
-                      } catch (error) {
-                        setDialogState(() => saving = false);
-                        messenger.showSnackBar(SnackBar(content: Text(error.toString())));
-                      }
-                    },
-                    icon: saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.add_business_outlined),
+                    onPressed: saving
+                        ? null
+                        : () async {
+                            if (!(formKey.currentState?.validate() ?? false)) {
+                              return;
+                            }
+                            final navigator = Navigator.of(dialogContext);
+                            final messenger = ScaffoldMessenger.of(context);
+                            setDialogState(() => saving = true);
+                            try {
+                              final tenant = await _api.createTenant(
+                                name: nameController.text.trim(),
+                                code: codeController.text.trim(),
+                                businessType: businessType,
+                                ownerName: ownerNameController.text.trim(),
+                                phone: phoneController.text.trim(),
+                                email: emailController.text.trim(),
+                                status: status,
+                                appName: appNameController.text.trim(),
+                              );
+                              if (!mounted) return;
+                              TenantSelectionSession.save(tenant);
+                              navigator.pop();
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text("تم إنشاء المتجر بنجاح"),
+                                ),
+                              );
+                              html.window.location.reload();
+                            } catch (error) {
+                              setDialogState(() => saving = false);
+                              messenger.showSnackBar(
+                                SnackBar(content: Text(error.toString())),
+                              );
+                            }
+                          },
+                    icon: saving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.add_business_outlined),
                     label: Text(saving ? "جاري الحفظ" : "إنشاء"),
                   ),
                 ],
@@ -3137,56 +3562,67 @@ class _AdminSidebarState extends State<AdminSidebar> {
               ),
               const SizedBox(height: 30),
               if (CurrentAdminSession.canViewProducts)
-              SidebarItem(
-                Icons.inventory_2_outlined,
-                'المنتجات',
-                widget.selectedSection == 'products',
-                onTap: () => _openProducts(context),
-              ),
+                SidebarItem(
+                  Icons.inventory_2_outlined,
+                  'المنتجات',
+                  widget.selectedSection == 'products',
+                  onTap: () => _openProducts(context),
+                ),
               if (CurrentAdminSession.canViewOrders)
-              SidebarItem(
-                Icons.receipt_long_outlined,
-                'الطلبات',
-                widget.selectedSection == 'orders',
-                onTap: () => _openOrders(context),
-              ),
+                SidebarItem(
+                  Icons.receipt_long_outlined,
+                  'الطلبات',
+                  widget.selectedSection == 'orders',
+                  onTap: () => _openOrders(context),
+                ),
               if (CurrentAdminSession.canViewAccounts)
-              SidebarItem(
-                Icons.manage_accounts_outlined,
-                'الحسابات',
-                widget.selectedSection == 'accounts',
-                onTap: () => _openAccounts(context),
-              ),
+                SidebarItem(
+                  Icons.manage_accounts_outlined,
+                  'الحسابات',
+                  widget.selectedSection == 'accounts',
+                  onTap: () => _openAccounts(context),
+                ),
               if (CurrentAdminSession.isSuperAdmin)
-              SidebarItem(
-                Icons.add_business_outlined,
-                "إضافة متجر",
-                false,
-                onTap: () => _openCreateTenantDialog(context),
-              ),
+                SidebarItem(
+                  Icons.add_business_outlined,
+                  "إضافة متجر",
+                  false,
+                  onTap: () => _openCreateTenantDialog(context),
+                ),
               if (CurrentAdminSession.canViewProducts)
-              SidebarItem(
-                Icons.category_outlined,
-                'الأقسام',
-                widget.selectedSection == 'categories',
-                onTap: () => _openCategories(context),
-              ),
-              if (CurrentAdminSession.canViewProducts) const SidebarItem(Icons.storefront_outlined, 'المخازن والفروع', false),
-              if (CurrentAdminSession.canViewProducts || CurrentAdminSession.canViewOrders) const SidebarItem(Icons.local_offer_outlined, 'الخصومات', false),
+                SidebarItem(
+                  Icons.category_outlined,
+                  'الأقسام',
+                  widget.selectedSection == 'categories',
+                  onTap: () => _openCategories(context),
+                ),
+              if (CurrentAdminSession.canViewProducts)
+                const SidebarItem(
+                  Icons.storefront_outlined,
+                  'المخازن والفروع',
+                  false,
+                ),
+              if (CurrentAdminSession.canViewProducts ||
+                  CurrentAdminSession.canViewOrders)
+                const SidebarItem(
+                  Icons.local_offer_outlined,
+                  'الخصومات',
+                  false,
+                ),
               if (CurrentAdminSession.canViewCommercial)
-              SidebarItem(
-                Icons.workspace_premium_outlined,
-                'الباقات والميزات',
-                widget.selectedSection == 'commercial',
-                onTap: () => _openCommercialSettings(context),
-              ),
+                SidebarItem(
+                  Icons.workspace_premium_outlined,
+                  'الباقات والميزات',
+                  widget.selectedSection == 'commercial',
+                  onTap: () => _openCommercialSettings(context),
+                ),
               if (CurrentAdminSession.canViewBranding)
-              SidebarItem(
-                Icons.settings_outlined,
-                'إعدادات الهوية',
-                widget.selectedSection == 'branding',
-                onTap: () => _openBranding(context),
-              ),
+                SidebarItem(
+                  Icons.settings_outlined,
+                  'إعدادات الهوية',
+                  widget.selectedSection == 'branding',
+                  onTap: () => _openBranding(context),
+                ),
               SidebarItem(
                 Icons.logout_outlined,
                 'تسجيل الخروج',
@@ -3200,14 +3636,19 @@ class _AdminSidebarState extends State<AdminSidebar> {
                 builder: (context, snapshot) {
                   final tenants = snapshot.data ?? const <AdminTenant>[];
                   final selectedCode = TenantSelectionSession.code;
-                  final selectedTenant = tenants.where((tenant) => tenant.code == selectedCode).cast<AdminTenant?>().firstOrNull;
+                  final selectedTenant = tenants
+                      .where((tenant) => tenant.code == selectedCode)
+                      .cast<AdminTenant?>()
+                      .firstOrNull;
 
                   return Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.10),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -3221,27 +3662,45 @@ class _AdminSidebarState extends State<AdminSidebar> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        if (CurrentAdminSession.isSuperAdmin && tenants.isNotEmpty)
+                        if (CurrentAdminSession.isSuperAdmin &&
+                            tenants.isNotEmpty)
                           DropdownButtonFormField<String>(
                             isExpanded: true,
                             value: selectedTenant?.code ?? tenants.first.code,
                             dropdownColor: const Color(0xFF0F172A),
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                            ),
                             decoration: const InputDecoration(
                               isDense: true,
                               border: OutlineInputBorder(),
                             ),
-                            items: tenants.map((tenant) => DropdownMenuItem<String>(value: tenant.code, child: Text(tenant.label, maxLines: 1, overflow: TextOverflow.ellipsis))).toList(),
+                            items: tenants
+                                .map(
+                                  (tenant) => DropdownMenuItem<String>(
+                                    value: tenant.code,
+                                    child: Text(
+                                      tenant.label,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                )
+                                .toList(),
                             onChanged: (value) {
                               if (value == null) return;
-                              final tenant = tenants.firstWhere((item) => item.code == value);
+                              final tenant = tenants.firstWhere(
+                                (item) => item.code == value,
+                              );
                               TenantSelectionSession.save(tenant);
                               html.window.location.reload();
                             },
                           )
                         else
                           Text(
-                            selectedTenant?.label ?? TenantSelectionSession.name,
+                            selectedTenant?.label ??
+                                TenantSelectionSession.name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -3290,9 +3749,13 @@ class SidebarItem extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 9),
       decoration: BoxDecoration(
-        color: selected ? Colors.white.withValues(alpha: 0.13) : Colors.transparent,
+        color: selected
+            ? Colors.white.withValues(alpha: 0.13)
+            : Colors.transparent,
         borderRadius: BorderRadius.circular(16),
-        border: selected ? Border.all(color: Colors.white.withValues(alpha: 0.14)) : null,
+        border: selected
+            ? Border.all(color: Colors.white.withValues(alpha: 0.14))
+            : null,
       ),
       child: ListTile(
         dense: true,
@@ -3330,7 +3793,13 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
 
     try {
       await _api.updateAccountStatus(account.id, !account.isActive);
-      messenger.showSnackBar(SnackBar(content: Text(account.isActive ? 'تم تعطيل الحساب' : 'تم تفعيل الحساب')));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            account.isActive ? 'تم تعطيل الحساب' : 'تم تفعيل الحساب',
+          ),
+        ),
+      );
       await _reload();
     } catch (error) {
       messenger.showSnackBar(SnackBar(content: Text(error.toString())));
@@ -3344,7 +3813,8 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
     var role = account.role == 'super_admin' ? 'manager' : account.role;
     final tenants = await _api.fetchTenants();
     if (!mounted) return;
-    int? selectedTenantId = account.tenantId ?? (tenants.isNotEmpty ? tenants.first.id : null);
+    int? selectedTenantId =
+        account.tenantId ?? (tenants.isNotEmpty ? tenants.first.id : null);
     var saving = false;
 
     try {
@@ -3362,47 +3832,127 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        TextFormField(controller: nameController, decoration: const InputDecoration(labelText: 'الاسم'), validator: (value) => value == null || value.trim().isEmpty ? 'مطلوب' : null),
+                        TextFormField(
+                          controller: nameController,
+                          decoration: const InputDecoration(labelText: 'الاسم'),
+                          validator: (value) =>
+                              value == null || value.trim().isEmpty
+                              ? 'مطلوب'
+                              : null,
+                        ),
                         const SizedBox(height: 12),
-                        TextFormField(controller: phoneController, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'رقم الهاتف'), validator: (value) => value == null || value.trim().isEmpty ? 'مطلوب' : null),
+                        TextFormField(
+                          controller: phoneController,
+                          keyboardType: TextInputType.phone,
+                          decoration: const InputDecoration(
+                            labelText: 'رقم الهاتف',
+                          ),
+                          validator: (value) =>
+                              value == null || value.trim().isEmpty
+                              ? 'مطلوب'
+                              : null,
+                        ),
                         const SizedBox(height: 12),
-                        DropdownButtonFormField<int>(value: selectedTenantId, decoration: const InputDecoration(labelText: 'المتجر'), items: tenants.map((tenant) => DropdownMenuItem<int>(value: tenant.id, child: Text(tenant.label))).toList(), validator: (value) => value == null ? 'اختر المتجر' : null, onChanged: saving ? null : (value) => setDialogState(() => selectedTenantId = value)),
+                        DropdownButtonFormField<int>(
+                          value: selectedTenantId,
+                          decoration: const InputDecoration(
+                            labelText: 'المتجر',
+                          ),
+                          items: tenants
+                              .map(
+                                (tenant) => DropdownMenuItem<int>(
+                                  value: tenant.id,
+                                  child: Text(tenant.label),
+                                ),
+                              )
+                              .toList(),
+                          validator: (value) =>
+                              value == null ? 'اختر المتجر' : null,
+                          onChanged: saving
+                              ? null
+                              : (value) => setDialogState(
+                                  () => selectedTenantId = value,
+                                ),
+                        ),
                         const SizedBox(height: 12),
                         DropdownButtonFormField<String>(
                           value: role,
                           decoration: const InputDecoration(labelText: 'الدور'),
                           items: const [
-                            DropdownMenuItem(value: 'tenant_admin', child: Text('مدير متجر')),
-                            DropdownMenuItem(value: 'manager', child: Text('مدير')),
-                            DropdownMenuItem(value: 'orders_staff', child: Text('موظف طلبات')),
-                            DropdownMenuItem(value: 'inventory_staff', child: Text('موظف مخزون')),
+                            DropdownMenuItem(
+                              value: 'tenant_admin',
+                              child: Text('مدير متجر'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'manager',
+                              child: Text('مدير'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'orders_staff',
+                              child: Text('موظف طلبات'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'inventory_staff',
+                              child: Text('موظف مخزون'),
+                            ),
                           ],
-                          onChanged: saving ? null : (value) => setDialogState(() => role = value ?? 'manager'),
+                          onChanged: saving
+                              ? null
+                              : (value) => setDialogState(
+                                  () => role = value ?? 'manager',
+                                ),
                         ),
                       ],
                     ),
                   ),
                 ),
                 actions: [
-                  TextButton(onPressed: saving ? null : () => Navigator.of(dialogContext).pop(), child: const Text('إلغاء')),
+                  TextButton(
+                    onPressed: saving
+                        ? null
+                        : () => Navigator.of(dialogContext).pop(),
+                    child: const Text('إلغاء'),
+                  ),
                   FilledButton.icon(
-                    onPressed: saving ? null : () async {
-                      if (!(formKey.currentState?.validate() ?? false)) return;
-                      final navigator = Navigator.of(dialogContext);
-                      final messenger = ScaffoldMessenger.of(context);
-                      setDialogState(() => saving = true);
-                      try {
-                        await _api.updateAccount(accountId: account.id, name: nameController.text.trim(), phone: phoneController.text.trim(), role: role, tenantId: selectedTenantId);
-                        if (!mounted) return;
-                        navigator.pop();
-                        messenger.showSnackBar(const SnackBar(content: Text('تم تعديل الحساب بنجاح')));
-                        await _reload();
-                      } catch (error) {
-                        setDialogState(() => saving = false);
-                        messenger.showSnackBar(SnackBar(content: Text(error.toString())));
-                      }
-                    },
-                    icon: saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_outlined),
+                    onPressed: saving
+                        ? null
+                        : () async {
+                            if (!(formKey.currentState?.validate() ?? false)) {
+                              return;
+                            }
+                            final navigator = Navigator.of(dialogContext);
+                            final messenger = ScaffoldMessenger.of(context);
+                            setDialogState(() => saving = true);
+                            try {
+                              await _api.updateAccount(
+                                accountId: account.id,
+                                name: nameController.text.trim(),
+                                phone: phoneController.text.trim(),
+                                role: role,
+                                tenantId: selectedTenantId,
+                              );
+                              if (!mounted) return;
+                              navigator.pop();
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('تم تعديل الحساب بنجاح'),
+                                ),
+                              );
+                              await _reload();
+                            } catch (error) {
+                              setDialogState(() => saving = false);
+                              messenger.showSnackBar(
+                                SnackBar(content: Text(error.toString())),
+                              );
+                            }
+                          },
+                    icon: saving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.save_outlined),
                     label: Text(saving ? 'جاري الحفظ' : 'حفظ'),
                   ),
                 ],
@@ -3434,28 +3984,62 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
                   width: 420,
                   child: Form(
                     key: formKey,
-                    child: TextFormField(controller: passwordController, obscureText: true, decoration: const InputDecoration(labelText: 'كلمة المرور الجديدة'), validator: (value) => value == null || value.trim().length < 8 ? '8 أحرف على الأقل' : null),
+                    child: TextFormField(
+                      controller: passwordController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'كلمة المرور الجديدة',
+                      ),
+                      validator: (value) =>
+                          value == null || value.trim().length < 8
+                          ? '8 أحرف على الأقل'
+                          : null,
+                    ),
                   ),
                 ),
                 actions: [
-                  TextButton(onPressed: saving ? null : () => Navigator.of(dialogContext).pop(), child: const Text('إلغاء')),
+                  TextButton(
+                    onPressed: saving
+                        ? null
+                        : () => Navigator.of(dialogContext).pop(),
+                    child: const Text('إلغاء'),
+                  ),
                   FilledButton.icon(
-                    onPressed: saving ? null : () async {
-                      if (!(formKey.currentState?.validate() ?? false)) return;
-                      final navigator = Navigator.of(dialogContext);
-                      final messenger = ScaffoldMessenger.of(context);
-                      setDialogState(() => saving = true);
-                      try {
-                        await _api.updateAccountPassword(account.id, passwordController.text);
-                        if (!mounted) return;
-                        navigator.pop();
-                        messenger.showSnackBar(const SnackBar(content: Text('تم تغيير كلمة المرور')));
-                      } catch (error) {
-                        setDialogState(() => saving = false);
-                        messenger.showSnackBar(SnackBar(content: Text(error.toString())));
-                      }
-                    },
-                    icon: saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.lock_reset_outlined),
+                    onPressed: saving
+                        ? null
+                        : () async {
+                            if (!(formKey.currentState?.validate() ?? false)) {
+                              return;
+                            }
+                            final navigator = Navigator.of(dialogContext);
+                            final messenger = ScaffoldMessenger.of(context);
+                            setDialogState(() => saving = true);
+                            try {
+                              await _api.updateAccountPassword(
+                                account.id,
+                                passwordController.text,
+                              );
+                              if (!mounted) return;
+                              navigator.pop();
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('تم تغيير كلمة المرور'),
+                                ),
+                              );
+                            } catch (error) {
+                              setDialogState(() => saving = false);
+                              messenger.showSnackBar(
+                                SnackBar(content: Text(error.toString())),
+                              );
+                            }
+                          },
+                    icon: saving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.lock_reset_outlined),
                     label: Text(saving ? 'جاري الحفظ' : 'حفظ'),
                   ),
                 ],
@@ -3509,24 +4093,91 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          TextFormField(controller: nameController, decoration: const InputDecoration(labelText: 'الاسم'), validator: (value) => value == null || value.trim().isEmpty ? 'مطلوب' : null),
+                          TextFormField(
+                            controller: nameController,
+                            decoration: const InputDecoration(
+                              labelText: 'الاسم',
+                            ),
+                            validator: (value) =>
+                                value == null || value.trim().isEmpty
+                                ? 'مطلوب'
+                                : null,
+                          ),
                           const SizedBox(height: 12),
-                          TextFormField(controller: phoneController, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'رقم الهاتف'), validator: (value) => value == null || value.trim().isEmpty ? 'مطلوب' : null),
+                          TextFormField(
+                            controller: phoneController,
+                            keyboardType: TextInputType.phone,
+                            decoration: const InputDecoration(
+                              labelText: 'رقم الهاتف',
+                            ),
+                            validator: (value) =>
+                                value == null || value.trim().isEmpty
+                                ? 'مطلوب'
+                                : null,
+                          ),
                           const SizedBox(height: 12),
-                          TextFormField(controller: passwordController, obscureText: true, decoration: const InputDecoration(labelText: 'كلمة المرور'), validator: (value) => value == null || value.trim().length < 8 ? '8 أحرف على الأقل' : null),
+                          TextFormField(
+                            controller: passwordController,
+                            obscureText: true,
+                            decoration: const InputDecoration(
+                              labelText: 'كلمة المرور',
+                            ),
+                            validator: (value) =>
+                                value == null || value.trim().length < 8
+                                ? '8 أحرف على الأقل'
+                                : null,
+                          ),
                           const SizedBox(height: 12),
-                          DropdownButtonFormField<int>(value: selectedTenantId, decoration: const InputDecoration(labelText: 'المتجر'), items: tenants.map((tenant) => DropdownMenuItem<int>(value: tenant.id, child: Text(tenant.label))).toList(), validator: (value) => value == null ? 'اختر المتجر' : null, onChanged: saving ? null : (value) => setDialogState(() => selectedTenantId = value)),
+                          DropdownButtonFormField<int>(
+                            value: selectedTenantId,
+                            decoration: const InputDecoration(
+                              labelText: 'المتجر',
+                            ),
+                            items: tenants
+                                .map(
+                                  (tenant) => DropdownMenuItem<int>(
+                                    value: tenant.id,
+                                    child: Text(tenant.label),
+                                  ),
+                                )
+                                .toList(),
+                            validator: (value) =>
+                                value == null ? 'اختر المتجر' : null,
+                            onChanged: saving
+                                ? null
+                                : (value) => setDialogState(
+                                    () => selectedTenantId = value,
+                                  ),
+                          ),
                           const SizedBox(height: 12),
                           DropdownButtonFormField<String>(
                             value: role,
-                            decoration: const InputDecoration(labelText: 'الدور'),
+                            decoration: const InputDecoration(
+                              labelText: 'الدور',
+                            ),
                             items: const [
-                              DropdownMenuItem(value: 'tenant_admin', child: Text('مدير متجر')),
-                              DropdownMenuItem(value: 'manager', child: Text('مدير')),
-                              DropdownMenuItem(value: 'orders_staff', child: Text('موظف طلبات')),
-                              DropdownMenuItem(value: 'inventory_staff', child: Text('موظف مخزون')),
+                              DropdownMenuItem(
+                                value: 'tenant_admin',
+                                child: Text('مدير متجر'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'manager',
+                                child: Text('مدير'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'orders_staff',
+                                child: Text('موظف طلبات'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'inventory_staff',
+                                child: Text('موظف مخزون'),
+                              ),
                             ],
-                            onChanged: saving ? null : (value) => setDialogState(() => role = value ?? 'manager'),
+                            onChanged: saving
+                                ? null
+                                : (value) => setDialogState(
+                                    () => role = value ?? 'manager',
+                                  ),
                           ),
                         ],
                       ),
@@ -3534,32 +4185,57 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
                   ),
                 ),
                 actions: [
-                  TextButton(onPressed: saving ? null : () => Navigator.of(dialogContext).pop(), child: const Text('إلغاء')),
+                  TextButton(
+                    onPressed: saving
+                        ? null
+                        : () => Navigator.of(dialogContext).pop(),
+                    child: const Text('إلغاء'),
+                  ),
                   FilledButton.icon(
-                    onPressed: saving ? null : () async {
-                      if (!(formKey.currentState?.validate() ?? false)) {
-                        return;
-                      }
+                    onPressed: saving
+                        ? null
+                        : () async {
+                            if (!(formKey.currentState?.validate() ?? false)) {
+                              return;
+                            }
 
-                      final navigator = Navigator.of(dialogContext);
-                      final messenger = ScaffoldMessenger.of(context);
+                            final navigator = Navigator.of(dialogContext);
+                            final messenger = ScaffoldMessenger.of(context);
 
-                      setDialogState(() => saving = true);
+                            setDialogState(() => saving = true);
 
-                      try {
-                        await _api.createAccount(name: nameController.text.trim(), phone: phoneController.text.trim(), password: passwordController.text, role: role, tenantId: selectedTenantId);
-                        if (!mounted) {
-                          return;
-                        }
-                        navigator.pop();
-                        messenger.showSnackBar(const SnackBar(content: Text('تم إنشاء الحساب بنجاح')));
-                        await _reload();
-                      } catch (error) {
-                        setDialogState(() => saving = false);
-                        messenger.showSnackBar(SnackBar(content: Text(error.toString())));
-                      }
-                    },
-                    icon: saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.add),
+                            try {
+                              await _api.createAccount(
+                                name: nameController.text.trim(),
+                                phone: phoneController.text.trim(),
+                                password: passwordController.text,
+                                role: role,
+                                tenantId: selectedTenantId,
+                              );
+                              if (!mounted) {
+                                return;
+                              }
+                              navigator.pop();
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('تم إنشاء الحساب بنجاح'),
+                                ),
+                              );
+                              await _reload();
+                            } catch (error) {
+                              setDialogState(() => saving = false);
+                              messenger.showSnackBar(
+                                SnackBar(content: Text(error.toString())),
+                              );
+                            }
+                          },
+                    icon: saving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.add),
                     label: Text(saving ? 'جاري الحفظ' : 'حفظ'),
                   ),
                 ],
@@ -3588,16 +4264,34 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
           final isMobile = constraints.maxWidth < 900;
 
           return Scaffold(
-            drawer: isMobile ? const Drawer(child: AdminSidebar(isDrawer: true, selectedSection: 'accounts')) : null,
+            drawer: isMobile
+                ? const Drawer(
+                    child: AdminSidebar(
+                      isDrawer: true,
+                      selectedSection: 'accounts',
+                    ),
+                  )
+                : null,
             appBar: isMobile
                 ? AppBar(
                     title: const Text('إدارة الحسابات'),
                     backgroundColor: const Color(0xFF0F172A),
                     foregroundColor: Colors.white,
-                    actions: [IconButton(onPressed: _reload, icon: const Icon(Icons.refresh))],
+                    actions: [
+                      IconButton(
+                        onPressed: _reload,
+                        icon: const Icon(Icons.refresh),
+                      ),
+                    ],
                   )
                 : null,
-            floatingActionButton: CurrentAdminSession.canManageAccounts ? FloatingActionButton.extended(onPressed: _openCreateAccountDialog, icon: const Icon(Icons.add), label: const Text('إضافة حساب')) : null,
+            floatingActionButton: CurrentAdminSession.canManageAccounts
+                ? FloatingActionButton.extended(
+                    onPressed: _openCreateAccountDialog,
+                    icon: const Icon(Icons.add),
+                    label: const Text('إضافة حساب'),
+                  )
+                : null,
             body: Row(
               children: [
                 if (!isMobile) const AdminSidebar(selectedSection: 'accounts'),
@@ -3609,17 +4303,26 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
                       child: FutureBuilder<List<AdminAccount>>(
                         future: _future,
                         builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
-                            return const Center(child: CircularProgressIndicator());
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
                           }
 
                           if (snapshot.hasError) {
                             return ListView(
                               padding: EdgeInsets.all(isMobile ? 14 : 24),
                               children: [
-                                _AccountsHeader(isMobile: isMobile, onReload: _reload),
+                                _AccountsHeader(
+                                  isMobile: isMobile,
+                                  onReload: _reload,
+                                ),
                                 const SizedBox(height: 18),
-                                ErrorPanel(message: snapshot.error.toString(), onRetry: _reload),
+                                ErrorPanel(
+                                  message: snapshot.error.toString(),
+                                  onRetry: _reload,
+                                ),
                               ],
                             );
                           }
@@ -3630,23 +4333,57 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
                             physics: const AlwaysScrollableScrollPhysics(),
                             padding: EdgeInsets.all(isMobile ? 14 : 24),
                             children: [
-                              _AccountsHeader(isMobile: isMobile, onReload: _reload),
+                              _AccountsHeader(
+                                isMobile: isMobile,
+                                onReload: _reload,
+                              ),
                               const SizedBox(height: 18),
                               Wrap(
                                 spacing: 12,
                                 runSpacing: 12,
                                 children: [
-                                  _AccountStatCard(title: 'كل الحسابات', value: accounts.length.toString(), icon: Icons.manage_accounts_outlined),
-                                  _AccountStatCard(title: 'فعالة', value: accounts.where((a) => a.isActive).length.toString(), icon: Icons.check_circle_outline),
-                                  _AccountStatCard(title: 'معطلة', value: accounts.where((a) => !a.isActive).length.toString(), icon: Icons.block_outlined),
+                                  _AccountStatCard(
+                                    title: 'كل الحسابات',
+                                    value: accounts.length.toString(),
+                                    icon: Icons.manage_accounts_outlined,
+                                  ),
+                                  _AccountStatCard(
+                                    title: 'فعالة',
+                                    value: accounts
+                                        .where((a) => a.isActive)
+                                        .length
+                                        .toString(),
+                                    icon: Icons.check_circle_outline,
+                                  ),
+                                  _AccountStatCard(
+                                    title: 'معطلة',
+                                    value: accounts
+                                        .where((a) => !a.isActive)
+                                        .length
+                                        .toString(),
+                                    icon: Icons.block_outlined,
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 18),
                               Row(
                                 children: [
-                                  const Text('قائمة الحسابات', style: TextStyle(color: Color(0xFF0F172A), fontSize: 20, fontWeight: FontWeight.w900)),
+                                  const Text(
+                                    'قائمة الحسابات',
+                                    style: TextStyle(
+                                      color: Color(0xFF0F172A),
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
                                   const Spacer(),
-                                  Text('${accounts.length} حساب', style: const TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w800)),
+                                  Text(
+                                    '${accounts.length} حساب',
+                                    style: const TextStyle(
+                                      color: Color(0xFF64748B),
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 12),
@@ -3654,10 +4391,32 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
                                 Container(
                                   padding: const EdgeInsets.all(24),
                                   decoration: cardDecoration(),
-                                  child: const Text('لا توجد حسابات إدارية بعد.', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w800)),
+                                  child: const Text(
+                                    'لا توجد حسابات إدارية بعد.',
+                                    style: TextStyle(
+                                      color: Color(0xFF64748B),
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
                                 )
                               else
-                                ...accounts.map((account) => Padding(padding: const EdgeInsets.only(bottom: 12), child: AccountCard(account: account, isMobile: isMobile, onToggleStatus: () => _toggleAccountStatus(account), onEdit: () => _openEditAccountDialog(account), onChangePassword: () => _openChangeAccountPasswordDialog(account)))),
+                                ...accounts.map(
+                                  (account) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 12),
+                                    child: AccountCard(
+                                      account: account,
+                                      isMobile: isMobile,
+                                      onToggleStatus: () =>
+                                          _toggleAccountStatus(account),
+                                      onEdit: () =>
+                                          _openEditAccountDialog(account),
+                                      onChangePassword: () =>
+                                          _openChangeAccountPasswordDialog(
+                                            account,
+                                          ),
+                                    ),
+                                  ),
+                                ),
                               const SizedBox(height: 36),
                             ],
                           );
@@ -3685,22 +4444,48 @@ class _AccountsHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.all(isMobile ? 18 : 24),
-      decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(26)),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A),
+        borderRadius: BorderRadius.circular(26),
+      ),
       child: Row(
         children: [
-          const Icon(Icons.manage_accounts_outlined, color: Colors.white, size: 34),
+          const Icon(
+            Icons.manage_accounts_outlined,
+            color: Colors.white,
+            size: 34,
+          ),
           const SizedBox(width: 14),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('إدارة الحسابات', style: TextStyle(color: Colors.white, fontSize: 25, fontWeight: FontWeight.w900)),
+                Text(
+                  'إدارة الحسابات',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 25,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
                 SizedBox(height: 6),
-                Text('عرض حسابات المنصة ومدراء المتاجر والموظفين.', style: TextStyle(color: Color(0xFFCBD5E1), fontWeight: FontWeight.w600)),
+                Text(
+                  'عرض حسابات المنصة ومدراء المتاجر والموظفين.',
+                  style: TextStyle(
+                    color: Color(0xFFCBD5E1),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ),
-          if (!isMobile) OutlinedButton.icon(onPressed: onReload, style: OutlinedButton.styleFrom(foregroundColor: Colors.white), icon: const Icon(Icons.refresh), label: const Text('تحديث')),
+          if (!isMobile)
+            OutlinedButton.icon(
+              onPressed: onReload,
+              style: OutlinedButton.styleFrom(foregroundColor: Colors.white),
+              icon: const Icon(Icons.refresh),
+              label: const Text('تحديث'),
+            ),
         ],
       ),
     );
@@ -3708,7 +4493,11 @@ class _AccountsHeader extends StatelessWidget {
 }
 
 class _AccountStatCard extends StatelessWidget {
-  const _AccountStatCard({required this.title, required this.value, required this.icon});
+  const _AccountStatCard({
+    required this.title,
+    required this.value,
+    required this.icon,
+  });
 
   final String title;
   final String value;
@@ -3727,9 +4516,22 @@ class _AccountStatCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w700)),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Color(0xFF64748B),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               const SizedBox(height: 5),
-              Text(value, style: const TextStyle(color: Color(0xFF0F172A), fontSize: 22, fontWeight: FontWeight.w900)),
+              Text(
+                value,
+                style: const TextStyle(
+                  color: Color(0xFF0F172A),
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
             ],
           ),
         ],
@@ -3739,7 +4541,14 @@ class _AccountStatCard extends StatelessWidget {
 }
 
 class AccountCard extends StatelessWidget {
-  const AccountCard({super.key, required this.account, required this.isMobile, required this.onToggleStatus, required this.onEdit, required this.onChangePassword});
+  const AccountCard({
+    super.key,
+    required this.account,
+    required this.isMobile,
+    required this.onToggleStatus,
+    required this.onEdit,
+    required this.onChangePassword,
+  });
 
   final AdminAccount account;
   final bool isMobile;
@@ -3749,7 +4558,9 @@ class AccountCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = account.isActive ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
+    final statusColor = account.isActive
+        ? const Color(0xFF16A34A)
+        : const Color(0xFFDC2626);
 
     if (isMobile) {
       return Container(
@@ -3760,19 +4571,74 @@ class AccountCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(account.isActive ? Icons.verified_user_outlined : Icons.block_outlined, color: statusColor),
+                Icon(
+                  account.isActive
+                      ? Icons.verified_user_outlined
+                      : Icons.block_outlined,
+                  color: statusColor,
+                ),
                 const SizedBox(width: 10),
-                Expanded(child: Text(account.name.isEmpty ? '-' : account.name, style: const TextStyle(color: Color(0xFF0F172A), fontSize: 17, fontWeight: FontWeight.w900))),
+                Expanded(
+                  child: Text(
+                    account.name.isEmpty ? '-' : account.name,
+                    style: const TextStyle(
+                      color: Color(0xFF0F172A),
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),
-            InfoBlock(title: 'البريد', value: account.email.isEmpty ? '-' : account.email),
+            InfoBlock(
+              title: 'البريد',
+              value: account.email.isEmpty ? '-' : account.email,
+            ),
             const SizedBox(height: 10),
-            InfoBlock(title: 'الهاتف', value: account.phone.isEmpty ? '-' : account.phone),
+            InfoBlock(
+              title: 'الهاتف',
+              value: account.phone.isEmpty ? '-' : account.phone,
+            ),
             const SizedBox(height: 10),
-            Row(children: [Expanded(child: InfoBlock(title: 'الدور', value: account.roleLabel)), const SizedBox(width: 10), Expanded(child: InfoBlock(title: 'الحالة', value: account.statusLabel))]),
+            Row(
+              children: [
+                Expanded(
+                  child: InfoBlock(title: 'الدور', value: account.roleLabel),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: InfoBlock(title: 'الحالة', value: account.statusLabel),
+                ),
+              ],
+            ),
             const SizedBox(height: 12),
-            if (CurrentAdminSession.canManageAccounts) Wrap(spacing: 8, runSpacing: 8, children: [OutlinedButton.icon(onPressed: onEdit, icon: const Icon(Icons.edit_outlined), label: const Text('تعديل')), OutlinedButton.icon(onPressed: onChangePassword, icon: const Icon(Icons.lock_reset_outlined), label: const Text('كلمة المرور')), OutlinedButton.icon(onPressed: onToggleStatus, icon: Icon(account.isActive ? Icons.block_outlined : Icons.check_circle_outline), label: Text(account.isActive ? 'تعطيل' : 'تفعيل'))]),
+            if (CurrentAdminSession.canManageAccounts)
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: onEdit,
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('تعديل'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: onChangePassword,
+                    icon: const Icon(Icons.lock_reset_outlined),
+                    label: const Text('كلمة المرور'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: onToggleStatus,
+                    icon: Icon(
+                      account.isActive
+                          ? Icons.block_outlined
+                          : Icons.check_circle_outline,
+                    ),
+                    label: Text(account.isActive ? 'تعطيل' : 'تفعيل'),
+                  ),
+                ],
+              ),
           ],
         ),
       );
@@ -3783,21 +4649,70 @@ class AccountCard extends StatelessWidget {
       decoration: cardDecoration(),
       child: Row(
         children: [
-          Icon(account.isActive ? Icons.verified_user_outlined : Icons.block_outlined, color: statusColor),
+          Icon(
+            account.isActive
+                ? Icons.verified_user_outlined
+                : Icons.block_outlined,
+            color: statusColor,
+          ),
           const SizedBox(width: 12),
-          Expanded(flex: 3, child: InfoBlock(title: 'الاسم', value: account.name.isEmpty ? '-' : account.name)),
-          Expanded(child: InfoBlock(title: 'البريد', value: account.email.isEmpty ? '-' : account.email)),
-          Expanded(child: InfoBlock(title: 'الهاتف', value: account.phone.isEmpty ? '-' : account.phone)),
-          Expanded(child: InfoBlock(title: 'الدور', value: account.roleLabel)),
-          Expanded(child: InfoBlock(title: 'الحالة', value: account.statusLabel)),
+          Expanded(
+            flex: 3,
+            child: InfoBlock(
+              title: 'الاسم',
+              value: account.name.isEmpty ? '-' : account.name,
+            ),
+          ),
+          Expanded(
+            child: InfoBlock(
+              title: 'البريد',
+              value: account.email.isEmpty ? '-' : account.email,
+            ),
+          ),
+          Expanded(
+            child: InfoBlock(
+              title: 'الهاتف',
+              value: account.phone.isEmpty ? '-' : account.phone,
+            ),
+          ),
+          Expanded(
+            child: InfoBlock(title: 'الدور', value: account.roleLabel),
+          ),
+          Expanded(
+            child: InfoBlock(title: 'الحالة', value: account.statusLabel),
+          ),
           const SizedBox(width: 12),
-          if (CurrentAdminSession.canManageAccounts) Wrap(spacing: 8, runSpacing: 8, children: [OutlinedButton.icon(onPressed: onEdit, icon: const Icon(Icons.edit_outlined), label: const Text('تعديل')), OutlinedButton.icon(onPressed: onChangePassword, icon: const Icon(Icons.lock_reset_outlined), label: const Text('كلمة المرور')), OutlinedButton.icon(onPressed: onToggleStatus, icon: Icon(account.isActive ? Icons.block_outlined : Icons.check_circle_outline), label: Text(account.isActive ? 'تعطيل' : 'تفعيل'))]),
+          if (CurrentAdminSession.canManageAccounts)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: onEdit,
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('تعديل'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: onChangePassword,
+                  icon: const Icon(Icons.lock_reset_outlined),
+                  label: const Text('كلمة المرور'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: onToggleStatus,
+                  icon: Icon(
+                    account.isActive
+                        ? Icons.block_outlined
+                        : Icons.check_circle_outline,
+                  ),
+                  label: Text(account.isActive ? 'تعطيل' : 'تفعيل'),
+                ),
+              ],
+            ),
         ],
       ),
     );
   }
 }
-
 
 class OrdersDashboardPage extends StatefulWidget {
   const OrdersDashboardPage({super.key});
@@ -3851,10 +4766,7 @@ class _OrdersDashboardPageState extends State<OrdersDashboardPage> {
     final changed = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => OrderDetailsDialog(
-        api: _api,
-        order: order,
-      ),
+      builder: (context) => OrderDetailsDialog(api: _api, order: order),
     );
 
     if (changed == true) {
@@ -3864,16 +4776,17 @@ class _OrdersDashboardPageState extends State<OrdersDashboardPage> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم تحديث حالة الطلب')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تم تحديث حالة الطلب')));
     }
   }
 
   List<AdminOrder> _filterOrders(List<AdminOrder> orders) {
     return orders.where((order) {
       final matchesSearch = order.matches(_search);
-      final matchesStatus = _statusFilter == 'all' || order.status == _statusFilter;
+      final matchesStatus =
+          _statusFilter == 'all' || order.status == _statusFilter;
 
       return matchesSearch && matchesStatus;
     }).toList();
@@ -3931,7 +4844,9 @@ class _OrdersDashboardPageState extends State<OrdersDashboardPage> {
                   ),
                 ],
               ),
-              drawer: const Drawer(child: AdminSidebar(isDrawer: true, selectedSection: 'orders')),
+              drawer: const Drawer(
+                child: AdminSidebar(isDrawer: true, selectedSection: 'orders'),
+              ),
               body: OrdersDashboardBody(
                 future: _future,
                 searchController: _searchController,
@@ -4047,12 +4962,13 @@ class OrdersDashboardBody extends StatelessWidget {
                 final allOrders = snapshot.data ?? [];
                 final orders = filterOrders(allOrders);
 
-                                if (isMobile) {
+                if (isMobile) {
                   return RefreshIndicator(
                     onRefresh: () async => onReload(),
                     child: ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
                       padding: EdgeInsets.zero,
                       children: [
                         Padding(
@@ -4093,7 +5009,12 @@ class OrdersDashboardBody extends StatelessWidget {
                         else
                           ...orders.map(
                             (order) => Padding(
-                              padding: EdgeInsets.fromLTRB(padding, 0, padding, 12),
+                              padding: EdgeInsets.fromLTRB(
+                                padding,
+                                0,
+                                padding,
+                                12,
+                              ),
                               child: MobileOrderCard(
                                 order: order,
                                 onOpenDetails: () => onOpenDetails(order),
@@ -4142,9 +5063,15 @@ class OrdersDashboardBody extends StatelessWidget {
                       child: orders.isEmpty
                           ? const EmptyOrders()
                           : ListView.separated(
-                              padding: EdgeInsets.fromLTRB(padding, 0, padding, 32),
+                              padding: EdgeInsets.fromLTRB(
+                                padding,
+                                0,
+                                padding,
+                                32,
+                              ),
                               itemCount: orders.length,
-                              separatorBuilder: (_, __) => const SizedBox(height: 12),
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 12),
                               itemBuilder: (context, index) {
                                 final order = orders[index];
 
@@ -4203,7 +5130,10 @@ class OrdersHeader extends StatelessWidget {
         prefixIcon: const Icon(Icons.search),
         filled: true,
         fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 14,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide.none,
@@ -4274,8 +5204,13 @@ class OrdersHeader extends StatelessWidget {
                   onPressed: onReload,
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
-                    side: BorderSide(color: Colors.white.withValues(alpha: 0.4)),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    side: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.4),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
                   ),
                   icon: const Icon(Icons.refresh),
                   label: const Text('تحديث'),
@@ -4337,12 +5272,32 @@ class OrdersSummaryGrid extends StatelessWidget {
         .fold<double>(0, (sum, order) => sum + order.total);
 
     final cards = [
-      SummaryData('كل الطلبات', orders.length.toString(), Icons.receipt_long_outlined),
+      SummaryData(
+        'كل الطلبات',
+        orders.length.toString(),
+        Icons.receipt_long_outlined,
+      ),
       SummaryData('جديد', pending.toString(), Icons.fiber_new_outlined),
-      SummaryData('قيد التجهيز', processing.toString(), Icons.inventory_outlined),
-      SummaryData('تم الشحن', shipped.toString(), Icons.local_shipping_outlined),
-      SummaryData('تم التسليم', delivered.toString(), Icons.check_circle_outline),
-      SummaryData('إجمالي غير ملغي', '${totalSales.toStringAsFixed(0)} د.ع', Icons.payments_outlined),
+      SummaryData(
+        'قيد التجهيز',
+        processing.toString(),
+        Icons.inventory_outlined,
+      ),
+      SummaryData(
+        'تم الشحن',
+        shipped.toString(),
+        Icons.local_shipping_outlined,
+      ),
+      SummaryData(
+        'تم التسليم',
+        delivered.toString(),
+        Icons.check_circle_outline,
+      ),
+      SummaryData(
+        'إجمالي غير ملغي',
+        '${totalSales.toStringAsFixed(0)} د.ع',
+        Icons.payments_outlined,
+      ),
     ];
 
     return LayoutBuilder(
@@ -4385,17 +5340,29 @@ class DesktopOrderRow extends StatelessWidget {
       decoration: cardDecoration(),
       child: Row(
         children: [
-          Expanded(
-            flex: 3,
-            child: OrderMainInfo(order: order),
-          ),
+          Expanded(flex: 3, child: OrderMainInfo(order: order)),
           Expanded(
             flex: 2,
-            child: InfoBlock(title: 'الزبون', value: order.customerName.isEmpty ? '-' : order.customerName),
+            child: InfoBlock(
+              title: 'الزبون',
+              value: order.customerName.isEmpty ? '-' : order.customerName,
+            ),
           ),
-          Expanded(child: InfoBlock(title: 'الهاتف', value: order.customerPhone.isEmpty ? '-' : order.customerPhone)),
-          Expanded(child: InfoBlock(title: 'المجموع', value: order.totalText)),
-          Expanded(child: InfoBlock(title: 'المنتجات', value: order.itemsCount.toString())),
+          Expanded(
+            child: InfoBlock(
+              title: 'الهاتف',
+              value: order.customerPhone.isEmpty ? '-' : order.customerPhone,
+            ),
+          ),
+          Expanded(
+            child: InfoBlock(title: 'المجموع', value: order.totalText),
+          ),
+          Expanded(
+            child: InfoBlock(
+              title: 'المنتجات',
+              value: order.itemsCount.toString(),
+            ),
+          ),
           OrderStatusChip(status: order.status, label: order.statusLabel),
           const SizedBox(width: 12),
           OutlinedButton.icon(
@@ -4431,11 +5398,23 @@ class MobileOrderCard extends StatelessWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              Expanded(child: MetricBox(title: 'المجموع', value: order.totalText)),
+              Expanded(
+                child: MetricBox(title: 'المجموع', value: order.totalText),
+              ),
               const SizedBox(width: 8),
-              Expanded(child: MetricBox(title: 'المنتجات', value: order.itemsCount.toString())),
+              Expanded(
+                child: MetricBox(
+                  title: 'المنتجات',
+                  value: order.itemsCount.toString(),
+                ),
+              ),
               const SizedBox(width: 8),
-              Expanded(child: MetricBox(title: 'الدفع', value: order.paymentStatusLabel)),
+              Expanded(
+                child: MetricBox(
+                  title: 'الدفع',
+                  value: order.paymentStatusLabel,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 14),
@@ -4482,8 +5461,10 @@ class OrderMainInfo extends StatelessWidget {
           runSpacing: 7,
           children: [
             MiniTag(order.createdAtText),
-            if (order.deliveryCity != null && order.deliveryCity!.isNotEmpty) MiniTag(order.deliveryCity!),
-            if (order.paymentStatus.isNotEmpty) MiniTag(order.paymentStatusLabel),
+            if (order.deliveryCity != null && order.deliveryCity!.isNotEmpty)
+              MiniTag(order.deliveryCity!),
+            if (order.paymentStatus.isNotEmpty)
+              MiniTag(order.paymentStatusLabel),
           ],
         ),
       ],
@@ -4492,11 +5473,7 @@ class OrderMainInfo extends StatelessWidget {
 }
 
 class OrderStatusChip extends StatelessWidget {
-  const OrderStatusChip({
-    super.key,
-    required this.status,
-    required this.label,
-  });
+  const OrderStatusChip({super.key, required this.status, required this.label});
 
   final String status;
   final String label;
@@ -4547,11 +5524,7 @@ class OrderStatusChip extends StatelessWidget {
 }
 
 class OrderDetailsDialog extends StatefulWidget {
-  const OrderDetailsDialog({
-    super.key,
-    required this.api,
-    required this.order,
-  });
+  const OrderDetailsDialog({super.key, required this.api, required this.order});
 
   final AdminApi api;
   final AdminOrder order;
@@ -4630,9 +5603,9 @@ class _OrderDetailsDialogState extends State<OrderDetailsDialog> {
         _isSaving = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذر تحديث حالة الطلب: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('تعذر تحديث حالة الطلب: $error')));
     }
   }
 
@@ -4644,10 +5617,27 @@ class _OrderDetailsDialogState extends State<OrderDetailsDialog> {
       child: AlertDialog(
         backgroundColor: const Color(0xFFF8FAFC),
         surfaceTintColor: Colors.transparent,
-        insetPadding: EdgeInsets.all(MediaQuery.sizeOf(context).width < 640 ? 8 : 18),
-        titlePadding: EdgeInsets.fromLTRB(MediaQuery.sizeOf(context).width < 640 ? 14 : 24, 20, MediaQuery.sizeOf(context).width < 640 ? 14 : 24, 0),
-        contentPadding: EdgeInsets.fromLTRB(MediaQuery.sizeOf(context).width < 640 ? 10 : 24, 16, MediaQuery.sizeOf(context).width < 640 ? 10 : 24, 10),
-        actionsPadding: EdgeInsets.fromLTRB(MediaQuery.sizeOf(context).width < 640 ? 10 : 24, 0, MediaQuery.sizeOf(context).width < 640 ? 10 : 24, 18),
+        insetPadding: EdgeInsets.all(
+          MediaQuery.sizeOf(context).width < 640 ? 8 : 18,
+        ),
+        titlePadding: EdgeInsets.fromLTRB(
+          MediaQuery.sizeOf(context).width < 640 ? 14 : 24,
+          20,
+          MediaQuery.sizeOf(context).width < 640 ? 14 : 24,
+          0,
+        ),
+        contentPadding: EdgeInsets.fromLTRB(
+          MediaQuery.sizeOf(context).width < 640 ? 10 : 24,
+          16,
+          MediaQuery.sizeOf(context).width < 640 ? 10 : 24,
+          10,
+        ),
+        actionsPadding: EdgeInsets.fromLTRB(
+          MediaQuery.sizeOf(context).width < 640 ? 10 : 24,
+          0,
+          MediaQuery.sizeOf(context).width < 640 ? 10 : 24,
+          18,
+        ),
         title: Text(
           'تفاصيل الطلب ${order.orderNumber}',
           style: const TextStyle(
@@ -4656,7 +5646,9 @@ class _OrderDetailsDialogState extends State<OrderDetailsDialog> {
           ),
         ),
         content: SizedBox(
-          width: MediaQuery.sizeOf(context).width < 640 ? MediaQuery.sizeOf(context).width - 36 : 860,
+          width: MediaQuery.sizeOf(context).width < 640
+              ? MediaQuery.sizeOf(context).width - 36
+              : 860,
           child: SingleChildScrollView(
             child: Column(
               children: [
@@ -4666,12 +5658,64 @@ class _OrderDetailsDialogState extends State<OrderDetailsDialog> {
                     spacing: 12,
                     runSpacing: 12,
                     children: [
-                      SizedBox(width: MediaQuery.sizeOf(context).width < 640 ? double.infinity : 250, child: InfoBlock(title: 'اسم الزبون', value: order.customerName.isEmpty ? '-' : order.customerName)),
-                      SizedBox(width: MediaQuery.sizeOf(context).width < 640 ? double.infinity : 250, child: InfoBlock(title: 'الهاتف', value: order.customerPhone.isEmpty ? '-' : order.customerPhone)),
-                      SizedBox(width: MediaQuery.sizeOf(context).width < 640 ? double.infinity : 250, child: InfoBlock(title: 'المدينة/المحافظة', value: order.deliveryCity ?? '-')),
-                      SizedBox(width: MediaQuery.sizeOf(context).width < 640 ? double.infinity : 250, child: InfoBlock(title: 'المنطقة', value: order.deliveryArea ?? '-')),
-                      SizedBox(width: MediaQuery.sizeOf(context).width < 640 ? double.infinity : 520, child: InfoBlock(title: 'العنوان', value: order.deliveryAddress ?? '-')),
-                      SizedBox(width: MediaQuery.sizeOf(context).width < 640 ? double.infinity : 250, child: InfoBlock(title: 'أقرب نقطة', value: order.deliveryNearestPoint ?? '-')),
+                      SizedBox(
+                        width: MediaQuery.sizeOf(context).width < 640
+                            ? double.infinity
+                            : 250,
+                        child: InfoBlock(
+                          title: 'اسم الزبون',
+                          value: order.customerName.isEmpty
+                              ? '-'
+                              : order.customerName,
+                        ),
+                      ),
+                      SizedBox(
+                        width: MediaQuery.sizeOf(context).width < 640
+                            ? double.infinity
+                            : 250,
+                        child: InfoBlock(
+                          title: 'الهاتف',
+                          value: order.customerPhone.isEmpty
+                              ? '-'
+                              : order.customerPhone,
+                        ),
+                      ),
+                      SizedBox(
+                        width: MediaQuery.sizeOf(context).width < 640
+                            ? double.infinity
+                            : 250,
+                        child: InfoBlock(
+                          title: 'المدينة/المحافظة',
+                          value: order.deliveryCity ?? '-',
+                        ),
+                      ),
+                      SizedBox(
+                        width: MediaQuery.sizeOf(context).width < 640
+                            ? double.infinity
+                            : 250,
+                        child: InfoBlock(
+                          title: 'المنطقة',
+                          value: order.deliveryArea ?? '-',
+                        ),
+                      ),
+                      SizedBox(
+                        width: MediaQuery.sizeOf(context).width < 640
+                            ? double.infinity
+                            : 520,
+                        child: InfoBlock(
+                          title: 'العنوان',
+                          value: order.deliveryAddress ?? '-',
+                        ),
+                      ),
+                      SizedBox(
+                        width: MediaQuery.sizeOf(context).width < 640
+                            ? double.infinity
+                            : 250,
+                        child: InfoBlock(
+                          title: 'أقرب نقطة',
+                          value: order.deliveryNearestPoint ?? '-',
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -4690,7 +5734,11 @@ class _OrderDetailsDialogState extends State<OrderDetailsDialog> {
                           ),
                           child: Wrap(
                             children: [
-                              SizedBox(width: MediaQuery.sizeOf(context).width < 640 ? double.infinity : 360, child: Column(
+                              SizedBox(
+                                width: MediaQuery.sizeOf(context).width < 640
+                                    ? double.infinity
+                                    : 360,
+                                child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
@@ -4705,16 +5753,44 @@ class _OrderDetailsDialogState extends State<OrderDetailsDialog> {
                                       spacing: 7,
                                       runSpacing: 7,
                                       children: [
-                                        if (item.variantName != null && item.variantName!.isNotEmpty) MiniTag(item.variantName!),
-                                        if (item.sku != null && item.sku!.isNotEmpty) MiniTag(item.sku!),
+                                        if (item.variantName != null &&
+                                            item.variantName!.isNotEmpty)
+                                          MiniTag(item.variantName!),
+                                        if (item.sku != null &&
+                                            item.sku!.isNotEmpty)
+                                          MiniTag(item.sku!),
                                       ],
                                     ),
                                   ],
                                 ),
                               ),
-                              SizedBox(width: MediaQuery.sizeOf(context).width < 640 ? double.infinity : 90, child: InfoBlock(title: 'الكمية', value: item.quantity.toString())),
-                              SizedBox(width: MediaQuery.sizeOf(context).width < 640 ? double.infinity : 130, child: InfoBlock(title: 'السعر', value: item.unitPriceText)),
-                              SizedBox(width: MediaQuery.sizeOf(context).width < 640 ? double.infinity : 130, child: InfoBlock(title: 'المجموع', value: item.totalText)),
+                              SizedBox(
+                                width: MediaQuery.sizeOf(context).width < 640
+                                    ? double.infinity
+                                    : 90,
+                                child: InfoBlock(
+                                  title: 'الكمية',
+                                  value: item.quantity.toString(),
+                                ),
+                              ),
+                              SizedBox(
+                                width: MediaQuery.sizeOf(context).width < 640
+                                    ? double.infinity
+                                    : 130,
+                                child: InfoBlock(
+                                  title: 'السعر',
+                                  value: item.unitPriceText,
+                                ),
+                              ),
+                              SizedBox(
+                                width: MediaQuery.sizeOf(context).width < 640
+                                    ? double.infinity
+                                    : 130,
+                                child: InfoBlock(
+                                  title: 'المجموع',
+                                  value: item.totalText,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -4730,11 +5806,41 @@ class _OrderDetailsDialogState extends State<OrderDetailsDialog> {
                     spacing: 12,
                     runSpacing: 12,
                     children: [
-                      SizedBox(width: 180, child: InfoBlock(title: 'المجموع الفرعي', value: order.subtotalText)),
-                      SizedBox(width: 180, child: InfoBlock(title: 'التوصيل', value: order.deliveryFeeText)),
-                      SizedBox(width: 180, child: InfoBlock(title: 'الخصم', value: order.discountText)),
-                      SizedBox(width: 180, child: InfoBlock(title: 'الإجمالي', value: order.totalText)),
-                      SizedBox(width: 220, child: InfoBlock(title: 'حالة الدفع', value: order.paymentStatusLabel)),
+                      SizedBox(
+                        width: 180,
+                        child: InfoBlock(
+                          title: 'المجموع الفرعي',
+                          value: order.subtotalText,
+                        ),
+                      ),
+                      SizedBox(
+                        width: 180,
+                        child: InfoBlock(
+                          title: 'التوصيل',
+                          value: order.deliveryFeeText,
+                        ),
+                      ),
+                      SizedBox(
+                        width: 180,
+                        child: InfoBlock(
+                          title: 'الخصم',
+                          value: order.discountText,
+                        ),
+                      ),
+                      SizedBox(
+                        width: 180,
+                        child: InfoBlock(
+                          title: 'الإجمالي',
+                          value: order.totalText,
+                        ),
+                      ),
+                      SizedBox(
+                        width: 220,
+                        child: InfoBlock(
+                          title: 'حالة الدفع',
+                          value: order.paymentStatusLabel,
+                        ),
+                      ),
                       SizedBox(
                         width: 260,
                         child: DropdownButtonFormField<String>(
@@ -4747,7 +5853,8 @@ class _OrderDetailsDialogState extends State<OrderDetailsDialog> {
                                 ),
                               )
                               .toList(),
-                          onChanged: _isSaving || !CurrentAdminSession.canManageOrders
+                          onChanged:
+                              _isSaving || !CurrentAdminSession.canManageOrders
                               ? null
                               : (value) {
                                   if (value != null) {
@@ -4765,7 +5872,8 @@ class _OrderDetailsDialogState extends State<OrderDetailsDialog> {
                     ],
                   ),
                 ),
-                if (order.customerNotes != null && order.customerNotes!.isNotEmpty) ...[
+                if (order.customerNotes != null &&
+                    order.customerNotes!.isNotEmpty) ...[
                   const SizedBox(height: 14),
                   _DialogSection(
                     title: 'ملاحظات الزبون',
@@ -4784,7 +5892,9 @@ class _OrderDetailsDialogState extends State<OrderDetailsDialog> {
         ),
         actions: [
           TextButton(
-            onPressed: _isSaving ? null : () => Navigator.of(context).pop(false),
+            onPressed: _isSaving
+                ? null
+                : () => Navigator.of(context).pop(false),
             child: const Text('إغلاق'),
           ),
           if (CurrentAdminSession.canManageOrders)
@@ -4813,21 +5923,14 @@ class EmptyOrders extends StatelessWidget {
     return const Center(
       child: Text(
         'لا توجد طلبات مطابقة',
-        style: TextStyle(
-          color: Color(0xFF64748B),
-          fontWeight: FontWeight.w900,
-        ),
+        style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w900),
       ),
     );
   }
 }
 
 class AddProductDialog extends StatefulWidget {
-  const AddProductDialog({
-    super.key,
-    required this.api,
-    this.product,
-  });
+  const AddProductDialog({super.key, required this.api, this.product});
 
   final AdminApi api;
   final AdminProduct? product;
@@ -4837,9 +5940,7 @@ class AddProductDialog extends StatefulWidget {
 }
 
 class _VariantDraft {
-  _VariantDraft({
-    this.id,
-  });
+  _VariantDraft({this.id});
 
   final int? id;
   final TextEditingController name = TextEditingController();
@@ -4864,9 +5965,12 @@ class _AddProductDialogState extends State<AddProductDialog> {
   final TextEditingController _skuController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _salePriceController = TextEditingController();
-  final TextEditingController _shortDescriptionController = TextEditingController();
+  final TextEditingController _shortDescriptionController =
+      TextEditingController();
   final TextEditingController _imageUrlController = TextEditingController();
-  final TextEditingController _quantityController = TextEditingController(text: '0');
+  final TextEditingController _quantityController = TextEditingController(
+    text: '0',
+  );
 
   late Future<List<AdminCategory>> _categoriesFuture;
 
@@ -4907,11 +6011,13 @@ class _AddProductDialogState extends State<AddProductDialog> {
           variant.name.text = productVariant.name;
           variant.sku.text = productVariant.sku ?? '';
           variant.price.text = productVariant.price?.toStringAsFixed(0) ?? '';
-          variant.salePrice.text = productVariant.salePrice?.toStringAsFixed(0) ?? '';
+          variant.salePrice.text =
+              productVariant.salePrice?.toStringAsFixed(0) ?? '';
           variant.quantity.text = productVariant.quantity.toString();
           _variants.add(variant);
         }
-      }    }
+      }
+    }
   }
 
   @override
@@ -4979,9 +6085,9 @@ class _AddProductDialogState extends State<AddProductDialog> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذر قراءة الصورة')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تعذر قراءة الصورة')));
       return;
     }
 
@@ -5005,9 +6111,9 @@ class _AddProductDialogState extends State<AddProductDialog> {
         _isUploadingImage = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم رفع صورة المنتج بنجاح')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تم رفع صورة المنتج بنجاح')));
     } catch (error) {
       if (!mounted) {
         return;
@@ -5017,9 +6123,9 @@ class _AddProductDialogState extends State<AddProductDialog> {
         _isUploadingImage = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذر رفع الصورة: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('تعذر رفع الصورة: $error')));
     }
   }
 
@@ -5096,7 +6202,13 @@ class _AddProductDialogState extends State<AddProductDialog> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_isEditMode ? 'تعذر تحديث المنتج: $error' : 'تعذر إضافة المنتج: $error')), 
+        SnackBar(
+          content: Text(
+            _isEditMode
+                ? 'تعذر تحديث المنتج: $error'
+                : 'تعذر إضافة المنتج: $error',
+          ),
+        ),
       );
 
       setState(() {
@@ -5177,10 +6289,27 @@ class _AddProductDialogState extends State<AddProductDialog> {
       child: AlertDialog(
         backgroundColor: const Color(0xFFF8FAFC),
         surfaceTintColor: Colors.transparent,
-        insetPadding: EdgeInsets.all(MediaQuery.sizeOf(context).width < 640 ? 8 : 18),
-        titlePadding: EdgeInsets.fromLTRB(MediaQuery.sizeOf(context).width < 640 ? 14 : 24, 20, MediaQuery.sizeOf(context).width < 640 ? 14 : 24, 0),
-        contentPadding: EdgeInsets.fromLTRB(MediaQuery.sizeOf(context).width < 640 ? 10 : 24, 16, MediaQuery.sizeOf(context).width < 640 ? 10 : 24, 10),
-        actionsPadding: EdgeInsets.fromLTRB(MediaQuery.sizeOf(context).width < 640 ? 10 : 24, 0, MediaQuery.sizeOf(context).width < 640 ? 10 : 24, 18),
+        insetPadding: EdgeInsets.all(
+          MediaQuery.sizeOf(context).width < 640 ? 8 : 18,
+        ),
+        titlePadding: EdgeInsets.fromLTRB(
+          MediaQuery.sizeOf(context).width < 640 ? 14 : 24,
+          20,
+          MediaQuery.sizeOf(context).width < 640 ? 14 : 24,
+          0,
+        ),
+        contentPadding: EdgeInsets.fromLTRB(
+          MediaQuery.sizeOf(context).width < 640 ? 10 : 24,
+          16,
+          MediaQuery.sizeOf(context).width < 640 ? 10 : 24,
+          10,
+        ),
+        actionsPadding: EdgeInsets.fromLTRB(
+          MediaQuery.sizeOf(context).width < 640 ? 10 : 24,
+          0,
+          MediaQuery.sizeOf(context).width < 640 ? 10 : 24,
+          18,
+        ),
         title: Text(
           _isEditMode ? 'تعديل المنتج' : 'إضافة منتج جديد',
           style: TextStyle(
@@ -5217,7 +6346,8 @@ class _AddProductDialogState extends State<AddProductDialog> {
                             FutureBuilder<List<AdminCategory>>(
                               future: _categoriesFuture,
                               builder: (context, snapshot) {
-                                final categories = snapshot.data ?? <AdminCategory>[];
+                                final categories =
+                                    snapshot.data ?? <AdminCategory>[];
 
                                 return DropdownButtonFormField<int?>(
                                   value: _categoryId,
@@ -5319,7 +6449,9 @@ class _AddProductDialogState extends State<AddProductDialog> {
                                 'منتج مميز',
                                 style: TextStyle(fontWeight: FontWeight.w800),
                               ),
-                              subtitle: const Text('يظهر بأولوية في واجهة الزبون'),
+                              subtitle: const Text(
+                                'يظهر بأولوية في واجهة الزبون',
+                              ),
                               contentPadding: EdgeInsets.zero,
                             ),
                           ],
@@ -5337,7 +6469,9 @@ class _AddProductDialogState extends State<AddProductDialog> {
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFFFFBEB),
                                   borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(color: const Color(0xFFFDE68A)),
+                                  border: Border.all(
+                                    color: const Color(0xFFFDE68A),
+                                  ),
                                 ),
                                 child: const Text(
                                   'هذا المنتج يحتوي خيارات. تعديل تفاصيل الخيارات والكميات لكل خيار نكمله بالمرحلة التالية.',
@@ -5365,16 +6499,24 @@ class _AddProductDialogState extends State<AddProductDialog> {
                                 'هذا المنتج يحتوي خيارات',
                                 style: TextStyle(fontWeight: FontWeight.w900),
                               ),
-                              subtitle: const Text('مثل 42 / 43 أو M / L أو Black / 128GB'),
+                              subtitle: const Text(
+                                'مثل 42 / 43 أو M / L أو Black / 128GB',
+                              ),
                               contentPadding: EdgeInsets.zero,
                             ),
                             if (_hasVariants) ...[
                               const SizedBox(height: 10),
-                              for (int index = 0; index < _variants.length; index++) ...[
+                              for (
+                                int index = 0;
+                                index < _variants.length;
+                                index++
+                              ) ...[
                                 _VariantEditor(
                                   index: index,
                                   variant: _variants[index],
-                                  onRemove: _variants.length == 1 ? null : () => _removeVariant(index),
+                                  onRemove: _variants.length == 1
+                                      ? null
+                                      : () => _removeVariant(index),
                                   requiredText: _requiredText,
                                   optionalNumber: _optionalNumber,
                                   requiredInteger: _requiredInteger,
@@ -5399,14 +6541,16 @@ class _AddProductDialogState extends State<AddProductDialog> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            if (_localPreviewUrl != null || _imageUrlController.text.trim().isNotEmpty) ...[
+                            if (_localPreviewUrl != null ||
+                                _imageUrlController.text.trim().isNotEmpty) ...[
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(18),
                                 child: Container(
                                   height: 180,
                                   color: const Color(0xFFF1F5F9),
                                   child: Image.network(
-                                    _localPreviewUrl ?? _imageUrlController.text.trim(),
+                                    _localPreviewUrl ??
+                                        _imageUrlController.text.trim(),
                                     fit: BoxFit.contain,
                                     errorBuilder: (_, __, ___) {
                                       return const Center(
@@ -5419,18 +6563,24 @@ class _AddProductDialogState extends State<AddProductDialog> {
                               const SizedBox(height: 12),
                             ],
                             OutlinedButton.icon(
-                              onPressed: _isSaving || _isUploadingImage ? null : _pickAndUploadImage,
+                              onPressed: _isSaving || _isUploadingImage
+                                  ? null
+                                  : _pickAndUploadImage,
                               icon: _isUploadingImage
                                   ? const SizedBox(
                                       width: 18,
                                       height: 18,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
                                     )
                                   : const Icon(Icons.upload_file_outlined),
                               label: Text(
                                 _isUploadingImage
                                     ? 'جاري رفع الصورة...'
-                                    : (_selectedImageName == null ? 'اختيار صورة من الجهاز' : 'تغيير الصورة'),
+                                    : (_selectedImageName == null
+                                          ? 'اختيار صورة من الجهاز'
+                                          : 'تغيير الصورة'),
                               ),
                             ),
                             if (_selectedImageName != null) ...[
@@ -5464,7 +6614,9 @@ class _AddProductDialogState extends State<AddProductDialog> {
         ),
         actions: [
           TextButton(
-            onPressed: _isSaving ? null : () => Navigator.of(context).pop(false),
+            onPressed: _isSaving
+                ? null
+                : () => Navigator.of(context).pop(false),
             child: const Text('إلغاء'),
           ),
           FilledButton.icon(
@@ -5476,7 +6628,11 @@ class _AddProductDialogState extends State<AddProductDialog> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.save_outlined),
-            label: Text(_isSaving ? 'جاري الحفظ...' : (_isEditMode ? 'حفظ التعديل' : 'حفظ المنتج')),
+            label: Text(
+              _isSaving
+                  ? 'جاري الحفظ...'
+                  : (_isEditMode ? 'حفظ التعديل' : 'حفظ المنتج'),
+            ),
           ),
         ],
       ),
@@ -5595,10 +6751,7 @@ class _VariantEditor extends StatelessWidget {
 }
 
 class _DialogSection extends StatelessWidget {
-  const _DialogSection({
-    required this.title,
-    required this.child,
-  });
+  const _DialogSection({required this.title, required this.child});
 
   final String title;
   final Widget child;
@@ -5628,10 +6781,7 @@ class _DialogSection extends StatelessWidget {
 }
 
 class _ResponsiveFields extends StatelessWidget {
-  const _ResponsiveFields({
-    required this.isNarrow,
-    required this.children,
-  });
+  const _ResponsiveFields({required this.isNarrow, required this.children});
 
   final bool isNarrow;
   final List<Widget> children;
@@ -5653,23 +6803,14 @@ class _ResponsiveFields extends StatelessWidget {
       spacing: 12,
       runSpacing: 12,
       children: children
-          .map(
-            (child) => SizedBox(
-              width: 360,
-              child: child,
-            ),
-          )
+          .map((child) => SizedBox(width: 360, child: child))
           .toList(),
     );
   }
 }
 
 class ErrorPanel extends StatelessWidget {
-  const ErrorPanel({
-    super.key,
-    required this.message,
-    required this.onRetry,
-  });
+  const ErrorPanel({super.key, required this.message, required this.onRetry});
 
   final String message;
   final VoidCallback onRetry;
@@ -5722,10 +6863,7 @@ class EmptyProducts extends StatelessWidget {
     return const Center(
       child: Text(
         'لا توجد منتجات مطابقة',
-        style: TextStyle(
-          color: Color(0xFF64748B),
-          fontWeight: FontWeight.w900,
-        ),
+        style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w900),
       ),
     );
   }
@@ -5746,6 +6884,84 @@ BoxDecoration cardDecoration() {
   );
 }
 
+class AdminSlide {
+  const AdminSlide({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    required this.imageUrl,
+    required this.linkUrl,
+    required this.sortOrder,
+    required this.status,
+  });
+
+  final int id;
+  final String? title;
+  final String? subtitle;
+  final String imageUrl;
+  final String? linkUrl;
+  final int sortOrder;
+  final String status;
+
+  bool get isActive => status == 'active';
+
+  bool matches(String query) {
+    final normalized = query.trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return true;
+    }
+
+    return [title, subtitle, imageUrl, linkUrl, status, sortOrder.toString()]
+        .whereType<String>()
+        .any((value) => value.toLowerCase().contains(normalized));
+  }
+
+  factory AdminSlide.fromJson(Map<String, dynamic> json) {
+    return AdminSlide(
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      title: _nullableString(json['title']),
+      subtitle: _nullableString(json['subtitle']),
+      imageUrl: json['image_url']?.toString() ?? '',
+      linkUrl: _nullableString(json['link_url']),
+      sortOrder: (json['sort_order'] as num?)?.toInt() ?? 0,
+      status: json['status']?.toString() ?? 'active',
+    );
+  }
+}
+
+class CreateSlideRequest {
+  const CreateSlideRequest({
+    required this.title,
+    required this.subtitle,
+    required this.imageUrl,
+    required this.linkUrl,
+    required this.sortOrder,
+    required this.status,
+  });
+
+  final String? title;
+  final String? subtitle;
+  final String imageUrl;
+  final String? linkUrl;
+  final int sortOrder;
+  final String status;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'subtitle': subtitle,
+      'image_url': imageUrl,
+      'link_url': linkUrl,
+      'sort_order': sortOrder,
+      'status': status,
+    };
+  }
+}
+
+String? _nullableString(dynamic value) {
+  final text = value?.toString().trim() ?? '';
+  return text.isEmpty ? null : text;
+}
 
 class AdminBrandingSettings {
   const AdminBrandingSettings({
@@ -5813,7 +7029,8 @@ class AdminBrandingSettings {
   final String? termsUrl;
 
   factory AdminBrandingSettings.fromJson(Map<String, dynamic> json) {
-    final localesJson = json['supported_locales'] as List<dynamic>? ?? const ['ar', 'en'];
+    final localesJson =
+        json['supported_locales'] as List<dynamic>? ?? const ['ar', 'en'];
 
     return AdminBrandingSettings(
       appName: json['app_name']?.toString() ?? '',
@@ -6005,8 +7222,10 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
 
     _currencyCodeController.text = settings.currencyCode ?? 'IQD';
     _currencySymbolController.text = settings.currencySymbol ?? 'د.ع';
-    _deliveryFixedFeeController.text = settings.deliveryFixedFee?.toStringAsFixed(0) ?? '0';
-    _freeDeliveryMinOrderController.text = settings.freeDeliveryMinOrder?.toStringAsFixed(0) ?? '';
+    _deliveryFixedFeeController.text =
+        settings.deliveryFixedFee?.toStringAsFixed(0) ?? '0';
+    _freeDeliveryMinOrderController.text =
+        settings.freeDeliveryMinOrder?.toStringAsFixed(0) ?? '';
 
     _deliveryEnabled = settings.deliveryEnabled;
     _deliveryFeeType = settings.deliveryFeeType ?? 'fixed';
@@ -6034,7 +7253,8 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
       return;
     }
 
-    if (_appNameController.text.trim().isEmpty || _businessNameController.text.trim().isEmpty) {
+    if (_appNameController.text.trim().isEmpty ||
+        _businessNameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('اسم التطبيق واسم النشاط مطلوبان')),
       );
@@ -6069,7 +7289,9 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
           deliveryEnabled: _deliveryEnabled,
           deliveryFeeType: _deliveryFeeType,
           deliveryFixedFee: _nullableDouble(_deliveryFixedFeeController) ?? 0,
-          freeDeliveryMinOrder: _nullableDouble(_freeDeliveryMinOrderController),
+          freeDeliveryMinOrder: _nullableDouble(
+            _freeDeliveryMinOrderController,
+          ),
           supportPhone: _nullableText(_supportPhoneController),
           whatsappNumber: _nullableText(_whatsappNumberController),
           facebookUrl: _nullableText(_facebookUrlController),
@@ -6098,9 +7320,9 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('فشل حفظ الإعدادات: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('فشل حفظ الإعدادات: $error')));
     } finally {
       if (mounted) {
         setState(() {
@@ -6242,7 +7464,8 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
                     currencyCodeController: _currencyCodeController,
                     currencySymbolController: _currencySymbolController,
                     deliveryFixedFeeController: _deliveryFixedFeeController,
-                    freeDeliveryMinOrderController: _freeDeliveryMinOrderController,
+                    freeDeliveryMinOrderController:
+                        _freeDeliveryMinOrderController,
                     deliveryEnabled: _deliveryEnabled,
                     deliveryFeeType: _deliveryFeeType,
                     textDirectionValue: _textDirection,
@@ -6417,10 +7640,26 @@ class _BrandingSettingsBody extends StatelessWidget {
                   _ResponsiveFields(
                     isNarrow: isMobile,
                     children: [
-                      _SettingTextField(controller: logoUrlController, label: 'رابط الشعار', icon: Icons.image_outlined),
-                      _SettingTextField(controller: darkLogoUrlController, label: 'رابط الشعار الداكن', icon: Icons.dark_mode_outlined),
-                      _SettingTextField(controller: appIconUrlController, label: 'رابط أيقونة التطبيق', icon: Icons.apps),
-                      _SettingTextField(controller: splashImageUrlController, label: 'رابط صورة البداية', icon: Icons.wallpaper_outlined),
+                      _SettingTextField(
+                        controller: logoUrlController,
+                        label: 'رابط الشعار',
+                        icon: Icons.image_outlined,
+                      ),
+                      _SettingTextField(
+                        controller: darkLogoUrlController,
+                        label: 'رابط الشعار الداكن',
+                        icon: Icons.dark_mode_outlined,
+                      ),
+                      _SettingTextField(
+                        controller: appIconUrlController,
+                        label: 'رابط أيقونة التطبيق',
+                        icon: Icons.apps,
+                      ),
+                      _SettingTextField(
+                        controller: splashImageUrlController,
+                        label: 'رابط صورة البداية',
+                        icon: Icons.wallpaper_outlined,
+                      ),
                     ],
                   ),
                 ],
@@ -6432,13 +7671,41 @@ class _BrandingSettingsBody extends StatelessWidget {
                   _ResponsiveFields(
                     isNarrow: isMobile,
                     children: [
-                      _SettingTextField(controller: primaryColorController, label: 'اللون الرئيسي', icon: Icons.palette_outlined),
-                      _SettingTextField(controller: secondaryColorController, label: 'اللون الثانوي', icon: Icons.palette),
-                      _SettingTextField(controller: accentColorController, label: 'لون مساعد', icon: Icons.color_lens_outlined),
-                      _SettingTextField(controller: backgroundColorController, label: 'لون الخلفية', icon: Icons.format_color_fill_outlined),
-                      _SettingTextField(controller: textColorController, label: 'لون النص', icon: Icons.text_fields),
-                      _SettingTextField(controller: buttonColorController, label: 'لون الأزرار', icon: Icons.smart_button_outlined),
-                      _SettingTextField(controller: fontFamilyController, label: 'اسم الخط', icon: Icons.font_download_outlined),
+                      _SettingTextField(
+                        controller: primaryColorController,
+                        label: 'اللون الرئيسي',
+                        icon: Icons.palette_outlined,
+                      ),
+                      _SettingTextField(
+                        controller: secondaryColorController,
+                        label: 'اللون الثانوي',
+                        icon: Icons.palette,
+                      ),
+                      _SettingTextField(
+                        controller: accentColorController,
+                        label: 'لون مساعد',
+                        icon: Icons.color_lens_outlined,
+                      ),
+                      _SettingTextField(
+                        controller: backgroundColorController,
+                        label: 'لون الخلفية',
+                        icon: Icons.format_color_fill_outlined,
+                      ),
+                      _SettingTextField(
+                        controller: textColorController,
+                        label: 'لون النص',
+                        icon: Icons.text_fields,
+                      ),
+                      _SettingTextField(
+                        controller: buttonColorController,
+                        label: 'لون الأزرار',
+                        icon: Icons.smart_button_outlined,
+                      ),
+                      _SettingTextField(
+                        controller: fontFamilyController,
+                        label: 'اسم الخط',
+                        icon: Icons.font_download_outlined,
+                      ),
                     ],
                   ),
                 ],
@@ -6450,16 +7717,33 @@ class _BrandingSettingsBody extends StatelessWidget {
                   _ResponsiveFields(
                     isNarrow: isMobile,
                     children: [
-                      _SettingTextField(controller: currencyCodeController, label: 'رمز العملة', icon: Icons.payments_outlined),
-                      _SettingTextField(controller: currencySymbolController, label: 'علامة العملة', icon: Icons.attach_money),
+                      _SettingTextField(
+                        controller: currencyCodeController,
+                        label: 'رمز العملة',
+                        icon: Icons.payments_outlined,
+                      ),
+                      _SettingTextField(
+                        controller: currencySymbolController,
+                        label: 'علامة العملة',
+                        icon: Icons.attach_money,
+                      ),
                       DropdownButtonFormField<String>(
                         value: textDirectionValue,
                         items: const [
-                          DropdownMenuItem(value: 'rtl', child: Text('RTL - عربي')),
-                          DropdownMenuItem(value: 'ltr', child: Text('LTR - إنكليزي')),
+                          DropdownMenuItem(
+                            value: 'rtl',
+                            child: Text('RTL - عربي'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'ltr',
+                            child: Text('LTR - إنكليزي'),
+                          ),
                         ],
                         onChanged: onTextDirectionChanged,
-                        decoration: _inputDecoration('اتجاه النص', Icons.format_textdirection_r_to_l),
+                        decoration: _inputDecoration(
+                          'اتجاه النص',
+                          Icons.format_textdirection_r_to_l,
+                        ),
                       ),
                     ],
                   ),
@@ -6472,12 +7756,36 @@ class _BrandingSettingsBody extends StatelessWidget {
                   _ResponsiveFields(
                     isNarrow: isMobile,
                     children: [
-                      _SettingTextField(controller: supportPhoneController, label: 'رقم الدعم', icon: Icons.phone_outlined),
-                      _SettingTextField(controller: whatsappNumberController, label: 'رقم واتساب', icon: Icons.chat_outlined),
-                      _SettingTextField(controller: facebookUrlController, label: 'Facebook URL', icon: Icons.facebook_outlined),
-                      _SettingTextField(controller: instagramUrlController, label: 'Instagram URL', icon: Icons.camera_alt_outlined),
-                      _SettingTextField(controller: tiktokUrlController, label: 'TikTok URL', icon: Icons.video_library_outlined),
-                      _SettingTextField(controller: websiteUrlController, label: 'Website URL', icon: Icons.language_outlined),
+                      _SettingTextField(
+                        controller: supportPhoneController,
+                        label: 'رقم الدعم',
+                        icon: Icons.phone_outlined,
+                      ),
+                      _SettingTextField(
+                        controller: whatsappNumberController,
+                        label: 'رقم واتساب',
+                        icon: Icons.chat_outlined,
+                      ),
+                      _SettingTextField(
+                        controller: facebookUrlController,
+                        label: 'Facebook URL',
+                        icon: Icons.facebook_outlined,
+                      ),
+                      _SettingTextField(
+                        controller: instagramUrlController,
+                        label: 'Instagram URL',
+                        icon: Icons.camera_alt_outlined,
+                      ),
+                      _SettingTextField(
+                        controller: tiktokUrlController,
+                        label: 'TikTok URL',
+                        icon: Icons.video_library_outlined,
+                      ),
+                      _SettingTextField(
+                        controller: websiteUrlController,
+                        label: 'Website URL',
+                        icon: Icons.language_outlined,
+                      ),
                     ],
                   ),
                 ],
@@ -6501,11 +7809,20 @@ class _BrandingSettingsBody extends StatelessWidget {
                       DropdownButtonFormField<String>(
                         value: deliveryFeeType,
                         items: const [
-                          DropdownMenuItem(value: 'fixed', child: Text('أجور ثابتة')),
-                          DropdownMenuItem(value: 'free', child: Text('توصيل مجاني')),
+                          DropdownMenuItem(
+                            value: 'fixed',
+                            child: Text('أجور ثابتة'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'free',
+                            child: Text('توصيل مجاني'),
+                          ),
                         ],
                         onChanged: onDeliveryFeeTypeChanged,
-                        decoration: _inputDecoration('نوع أجور التوصيل', Icons.local_shipping_outlined),
+                        decoration: _inputDecoration(
+                          'نوع أجور التوصيل',
+                          Icons.local_shipping_outlined,
+                        ),
                       ),
                       _SettingTextField(
                         controller: deliveryFixedFeeController,
@@ -6530,8 +7847,16 @@ class _BrandingSettingsBody extends StatelessWidget {
                   _ResponsiveFields(
                     isNarrow: isMobile,
                     children: [
-                      _SettingTextField(controller: privacyPolicyUrlController, label: 'Privacy Policy URL', icon: Icons.privacy_tip_outlined),
-                      _SettingTextField(controller: termsUrlController, label: 'Terms URL', icon: Icons.gavel_outlined),
+                      _SettingTextField(
+                        controller: privacyPolicyUrlController,
+                        label: 'Privacy Policy URL',
+                        icon: Icons.privacy_tip_outlined,
+                      ),
+                      _SettingTextField(
+                        controller: termsUrlController,
+                        label: 'Terms URL',
+                        icon: Icons.gavel_outlined,
+                      ),
                     ],
                   ),
                 ],
@@ -6539,17 +7864,23 @@ class _BrandingSettingsBody extends StatelessWidget {
               const SizedBox(height: 22),
               Align(
                 alignment: Alignment.centerLeft,
-                child: CurrentAdminSession.canManageBranding ? FilledButton.icon(
-                  onPressed: isSaving ? null : onSave,
-                  icon: isSaving
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.save_outlined),
-                  label: Text(isSaving ? 'جاري الحفظ...' : 'حفظ الإعدادات'),
-                ) : const SizedBox.shrink(),
+                child: CurrentAdminSession.canManageBranding
+                    ? FilledButton.icon(
+                        onPressed: isSaving ? null : onSave,
+                        icon: isSaving
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.save_outlined),
+                        label: Text(
+                          isSaving ? 'جاري الحفظ...' : 'حفظ الإعدادات',
+                        ),
+                      )
+                    : const SizedBox.shrink(),
               ),
             ],
           );
@@ -6580,11 +7911,12 @@ class _BrandingHeader extends StatelessWidget {
         icon: const Icon(Icons.refresh),
         label: const Text('تحديث'),
       ),
-      if (CurrentAdminSession.canManageBranding) FilledButton.icon(
-        onPressed: isSaving ? null : onSave,
-        icon: const Icon(Icons.save_outlined),
-        label: const Text('حفظ'),
-      ),
+      if (CurrentAdminSession.canManageBranding)
+        FilledButton.icon(
+          onPressed: isSaving ? null : onSave,
+          icon: const Icon(Icons.save_outlined),
+          label: const Text('حفظ'),
+        ),
     ];
 
     return Container(
@@ -6650,10 +7982,7 @@ class _BrandingHeaderText extends StatelessWidget {
 }
 
 class _SettingsSection extends StatelessWidget {
-  const _SettingsSection({
-    required this.title,
-    required this.children,
-  });
+  const _SettingsSection({required this.title, required this.children});
 
   final String title;
   final List<Widget> children;
@@ -6795,9 +8124,7 @@ class AdminFeatureFlag {
     );
   }
 
-  AdminFeatureFlag copyWith({
-    bool? isEnabled,
-  }) {
+  AdminFeatureFlag copyWith({bool? isEnabled}) {
     return AdminFeatureFlag(
       id: id,
       code: code,
@@ -6834,10 +8161,7 @@ class _CommercialSettingsPageState extends State<CommercialSettingsPage> {
     final features = await _api.fetchFeatureFlags();
     _features = features;
 
-    return _CommercialSettingsData(
-      plans: plans,
-      features: features,
-    );
+    return _CommercialSettingsData(plans: plans, features: features);
   }
 
   Future<void> _refresh() async {
@@ -6870,10 +8194,7 @@ class _CommercialSettingsPageState extends State<CommercialSettingsPage> {
       setState(() {
         _features = updated;
         _future = Future.value(
-          _CommercialSettingsData(
-            plans: [],
-            features: updated,
-          ),
+          _CommercialSettingsData(plans: [], features: updated),
         );
       });
 
@@ -6891,9 +8212,9 @@ class _CommercialSettingsPageState extends State<CommercialSettingsPage> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('فشل الحفظ: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('فشل الحفظ: $error')));
     } finally {
       if (mounted) {
         setState(() {
@@ -6942,17 +8263,15 @@ class _CommercialSettingsPageState extends State<CommercialSettingsPage> {
           : null,
       body: Row(
         children: [
-          if (!isMobile)
-            const AdminSidebar(
-              selectedSection: 'commercial',
-            ),
+          if (!isMobile) const AdminSidebar(selectedSection: 'commercial'),
           Expanded(
             child: RefreshIndicator(
               onRefresh: _refresh,
               child: FutureBuilder<_CommercialSettingsData>(
                 future: _future,
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting && _features.isEmpty) {
+                  if (snapshot.connectionState == ConnectionState.waiting &&
+                      _features.isEmpty) {
                     return const Center(child: CircularProgressIndicator());
                   }
 
@@ -6996,27 +8315,19 @@ class _CommercialSettingsPageState extends State<CommercialSettingsPage> {
       ),
     );
 
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: content,
-    );
+    return Directionality(textDirection: TextDirection.rtl, child: content);
   }
 }
 
 class _CommercialSettingsData {
-  const _CommercialSettingsData({
-    required this.plans,
-    required this.features,
-  });
+  const _CommercialSettingsData({required this.plans, required this.features});
 
   final List<AdminPlan> plans;
   final List<AdminFeatureFlag> features;
 }
 
 class _CommercialHeader extends StatelessWidget {
-  const _CommercialHeader({
-    required this.isMobile,
-  });
+  const _CommercialHeader({required this.isMobile});
 
   final bool isMobile;
 
@@ -7071,9 +8382,7 @@ class _CommercialHeader extends StatelessWidget {
 }
 
 class _PlansSection extends StatelessWidget {
-  const _PlansSection({
-    required this.plans,
-  });
+  const _PlansSection({required this.plans});
 
   final List<AdminPlan> plans;
 
@@ -7115,9 +8424,7 @@ class _PlansSection extends StatelessWidget {
 }
 
 class _PlanCard extends StatelessWidget {
-  const _PlanCard({
-    required this.plan,
-  });
+  const _PlanCard({required this.plan});
 
   final AdminPlan plan;
 
@@ -7183,7 +8490,10 @@ class _PlanCard extends StatelessWidget {
           ),
           const Divider(height: 24),
           _PlanLimitRow(label: 'الفروع', value: _limitText(plan.maxBranches)),
-          _PlanLimitRow(label: 'المخازن', value: _limitText(plan.maxWarehouses)),
+          _PlanLimitRow(
+            label: 'المخازن',
+            value: _limitText(plan.maxWarehouses),
+          ),
           _PlanLimitRow(label: 'المستخدمين', value: _limitText(plan.maxUsers)),
           _PlanLimitRow(label: 'المنتجات', value: _limitText(plan.maxProducts)),
         ],
@@ -7193,10 +8503,7 @@ class _PlanCard extends StatelessWidget {
 }
 
 class _PlanLimitRow extends StatelessWidget {
-  const _PlanLimitRow({
-    required this.label,
-    required this.value,
-  });
+  const _PlanLimitRow({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -7262,17 +8569,18 @@ class _FeatureFlagsSection extends StatelessWidget {
                   ),
                 ),
               ),
-              if (CurrentAdminSession.canManageCommercial) FilledButton.icon(
-                onPressed: saving ? null : onSave,
-                icon: saving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.save_outlined),
-                label: Text(saving ? 'جاري الحفظ...' : 'حفظ الميزات'),
-              ),
+              if (CurrentAdminSession.canManageCommercial)
+                FilledButton.icon(
+                  onPressed: saving ? null : onSave,
+                  icon: saving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.save_outlined),
+                  label: Text(saving ? 'جاري الحفظ...' : 'حفظ الميزات'),
+                ),
             ],
           ),
           const SizedBox(height: 16),
@@ -7357,17 +8665,25 @@ class _FeatureFlagTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: feature.isEnabled ? const Color(0xFFEFF6FF) : const Color(0xFFF8FAFC),
+        color: feature.isEnabled
+            ? const Color(0xFFEFF6FF)
+            : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: feature.isEnabled ? const Color(0xFFBFDBFE) : const Color(0xFFE2E8F0),
+          color: feature.isEnabled
+              ? const Color(0xFFBFDBFE)
+              : const Color(0xFFE2E8F0),
         ),
       ),
       child: Row(
         children: [
           Icon(
-            feature.isEnabled ? Icons.check_circle_outline : Icons.radio_button_unchecked,
-            color: feature.isEnabled ? const Color(0xFF2563EB) : const Color(0xFF94A3B8),
+            feature.isEnabled
+                ? Icons.check_circle_outline
+                : Icons.radio_button_unchecked,
+            color: feature.isEnabled
+                ? const Color(0xFF2563EB)
+                : const Color(0xFF94A3B8),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -7383,7 +8699,10 @@ class _FeatureFlagTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _featureDescriptionAr(feature.code, feature.description ?? feature.code),
+                  _featureDescriptionAr(
+                    feature.code,
+                    feature.description ?? feature.code,
+                  ),
                   style: const TextStyle(
                     color: Color(0xFF64748B),
                     fontWeight: FontWeight.w600,
@@ -7403,10 +8722,7 @@ class _FeatureFlagTile extends StatelessWidget {
 }
 
 class _CommercialErrorCard extends StatelessWidget {
-  const _CommercialErrorCard({
-    required this.error,
-    required this.onRetry,
-  });
+  const _CommercialErrorCard({required this.error, required this.onRetry});
 
   final String error;
   final Future<void> Function() onRetry;
@@ -7446,20 +8762,3 @@ class _CommercialErrorCard extends StatelessWidget {
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
