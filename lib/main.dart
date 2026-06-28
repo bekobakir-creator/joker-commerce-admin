@@ -3214,6 +3214,53 @@ class _SlidesDashboardPageState extends State<SlidesDashboardPage> {
     });
   }
 
+  Future<void> _deactivateSlide(AdminSlide slide) async {
+    if (!CurrentAdminSession.canManageBranding || slide.status == 'inactive') {
+      return;
+    }
+
+    final title = slide.title?.isNotEmpty == true ? slide.title! : 'بدون عنوان';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: AlertDialog(
+            title: const Text('تعطيل السلايد'),
+            content: Text('هل تريد تعطيل السلايد "$title"؟'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('إلغاء'),
+              ),
+              FilledButton.icon(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                icon: const Icon(Icons.visibility_off_outlined),
+                label: const Text('تعطيل'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (!mounted || confirmed != true) return;
+
+    try {
+      await _api.deactivateSlide(slide.id);
+      if (!mounted) return;
+      _reload();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تم تعطيل السلايد')));
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
+    }
+  }
+
   Future<void> _pickAndUploadSlideImage(
     TextEditingController imageUrlController,
   ) async {
@@ -3647,6 +3694,21 @@ class _SlidesDashboardPageState extends State<SlidesDashboardPage> {
                                             _SlidePreviewImage(slide: slide),
                                             const SizedBox(height: 14),
                                             _SlideInfo(slide: slide),
+                                            if (CurrentAdminSession
+                                                    .canManageBranding &&
+                                                slide.status != 'inactive') ...[
+                                              const SizedBox(height: 12),
+                                              OutlinedButton.icon(
+                                                onPressed: () =>
+                                                    _deactivateSlide(slide),
+                                                icon: const Icon(
+                                                  Icons.visibility_off_outlined,
+                                                ),
+                                                label: const Text(
+                                                  '\u062a\u0639\u0637\u064a\u0644',
+                                                ),
+                                              ),
+                                            ],
                                           ],
                                         )
                                       : Row(
@@ -3661,6 +3723,21 @@ class _SlidesDashboardPageState extends State<SlidesDashboardPage> {
                                             Expanded(
                                               child: _SlideInfo(slide: slide),
                                             ),
+                                            if (CurrentAdminSession
+                                                    .canManageBranding &&
+                                                slide.status != 'inactive') ...[
+                                              const SizedBox(width: 12),
+                                              OutlinedButton.icon(
+                                                onPressed: () =>
+                                                    _deactivateSlide(slide),
+                                                icon: const Icon(
+                                                  Icons.visibility_off_outlined,
+                                                ),
+                                                label: const Text(
+                                                  '\u062a\u0639\u0637\u064a\u0644',
+                                                ),
+                                              ),
+                                            ],
                                           ],
                                         ),
                                 ),
