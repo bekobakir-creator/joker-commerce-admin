@@ -6806,6 +6806,44 @@ class _FeatureFlagsSection extends StatelessWidget {
   }
 }
 
+String _featureNameAr(String code, String fallback) {
+  switch (code) {
+    case 'advanced_reports':
+      return 'التقارير المتقدمة';
+    case 'delivery_integration':
+      return 'ربط شركات التوصيل';
+    case 'installments':
+      return 'التقسيط';
+    case 'multi_branch':
+      return 'تعدد الفروع';
+    case 'multi_warehouse':
+      return 'تعدد المخازن';
+    case 'online_payment':
+      return 'الدفع الإلكتروني';
+    default:
+      return fallback;
+  }
+}
+
+String _featureDescriptionAr(String code, String fallback) {
+  switch (code) {
+    case 'advanced_reports':
+      return 'تفعيل التقارير المتقدمة لهذا المتجر.';
+    case 'delivery_integration':
+      return 'تفعيل ربط شركات التوصيل لهذا المتجر.';
+    case 'installments':
+      return 'تفعيل التقسيط لهذا المتجر.';
+    case 'multi_branch':
+      return 'تفعيل تعدد الفروع لهذا المتجر.';
+    case 'multi_warehouse':
+      return 'تفعيل تعدد المخازن لهذا المتجر.';
+    case 'online_payment':
+      return 'تفعيل الدفع الإلكتروني لهذا المتجر.';
+    default:
+      return fallback;
+  }
+}
+
 class _FeatureFlagTile extends StatelessWidget {
   const _FeatureFlagTile({
     required this.feature,
@@ -6841,7 +6879,7 @@ class _FeatureFlagTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  feature.name,
+                  _featureNameAr(feature.code, feature.name),
                   style: const TextStyle(
                     fontWeight: FontWeight.w900,
                     color: Color(0xFF0F172A),
@@ -6849,7 +6887,7 @@ class _FeatureFlagTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  feature.description ?? feature.code,
+                  _featureDescriptionAr(feature.code, feature.description ?? feature.code),
                   style: const TextStyle(
                     color: Color(0xFF64748B),
                     fontWeight: FontWeight.w600,
