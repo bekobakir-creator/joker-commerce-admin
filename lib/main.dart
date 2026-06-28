@@ -3214,10 +3214,200 @@ class _SlidesDashboardPageState extends State<SlidesDashboardPage> {
     });
   }
 
-  void _openAddSlide() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('إضافة السلايد بالخطوة التالية')),
-    );
+  Future<void> _openAddSlide() async {
+    final titleController = TextEditingController();
+    final subtitleController = TextEditingController();
+    final imageUrlController = TextEditingController();
+    final linkUrlController = TextEditingController();
+    final sortOrderController = TextEditingController(text: '0');
+    var status = 'active';
+    var saving = false;
+
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) {
+          return StatefulBuilder(
+            builder: (context, setDialogState) {
+              return AlertDialog(
+                title: const Text(
+                  '\u0625\u0636\u0627\u0641\u0629 \u0633\u0644\u0627\u064a\u062f',
+                ),
+                content: SizedBox(
+                  width: 460,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextField(
+                          controller: titleController,
+                          decoration: const InputDecoration(
+                            labelText:
+                                '\u0627\u0644\u0639\u0646\u0648\u0627\u0646',
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: subtitleController,
+                          decoration: const InputDecoration(
+                            labelText: '\u0627\u0644\u0648\u0635\u0641',
+                          ),
+                          maxLines: 2,
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: imageUrlController,
+                          decoration: const InputDecoration(
+                            labelText:
+                                '\u0631\u0627\u0628\u0637 \u0627\u0644\u0635\u0648\u0631\u0629',
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: linkUrlController,
+                          decoration: const InputDecoration(
+                            labelText:
+                                '\u0631\u0627\u0628\u0637 \u0627\u0644\u0627\u0646\u062a\u0642\u0627\u0644',
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: sortOrderController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText:
+                                '\u0627\u0644\u062a\u0631\u062a\u064a\u0628',
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<String>(
+                          value: status,
+                          decoration: const InputDecoration(
+                            labelText: '\u0627\u0644\u062d\u0627\u0644\u0629',
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'active',
+                              child: Text('\u0641\u0639\u0627\u0644'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'inactive',
+                              child: Text(
+                                '\u063a\u064a\u0631 \u0641\u0639\u0627\u0644',
+                              ),
+                            ),
+                          ],
+                          onChanged: saving
+                              ? null
+                              : (value) => setDialogState(
+                                  () => status = value ?? 'active',
+                                ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: saving
+                        ? null
+                        : () => Navigator.of(dialogContext).pop(),
+                    child: const Text('\u0625\u0644\u063a\u0627\u0621'),
+                  ),
+                  FilledButton.icon(
+                    onPressed: saving
+                        ? null
+                        : () async {
+                            final imageUrl = imageUrlController.text.trim();
+                            final sortOrder = int.tryParse(
+                              sortOrderController.text.trim(),
+                            );
+                            final messenger = ScaffoldMessenger.of(context);
+                            final slideNavigator = Navigator.of(dialogContext);
+
+                            if (imageUrl.isEmpty) {
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    '\u0631\u0627\u0628\u0637 \u0627\u0644\u0635\u0648\u0631\u0629 \u0645\u0637\u0644\u0648\u0628',
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
+
+                            if (sortOrder == null) {
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    '\u0627\u0644\u062a\u0631\u062a\u064a\u0628 \u064a\u062c\u0628 \u0623\u0646 \u064a\u0643\u0648\u0646 \u0631\u0642\u0645\u0627\u064b',
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
+
+                            setDialogState(() => saving = true);
+
+                            try {
+                              await _api.createSlide(
+                                CreateSlideRequest(
+                                  title: _nullableString(titleController.text),
+                                  subtitle: _nullableString(
+                                    subtitleController.text,
+                                  ),
+                                  imageUrl: imageUrl,
+                                  linkUrl: _nullableString(
+                                    linkUrlController.text,
+                                  ),
+                                  sortOrder: sortOrder,
+                                  status: status,
+                                ),
+                              );
+
+                              if (!mounted) return;
+                              slideNavigator.pop();
+                              _reload();
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    '\u062a\u0645\u062a \u0625\u0636\u0627\u0641\u0629 \u0627\u0644\u0633\u0644\u0627\u064a\u062f',
+                                  ),
+                                ),
+                              );
+                            } catch (error) {
+                              setDialogState(() => saving = false);
+                              messenger.showSnackBar(
+                                SnackBar(content: Text(error.toString())),
+                              );
+                            }
+                          },
+                    icon: saving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.save_outlined),
+                    label: Text(
+                      saving
+                          ? '\u062c\u0627\u0631\u064a \u0627\u0644\u062d\u0641\u0638'
+                          : '\u062d\u0641\u0638',
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      titleController.dispose();
+      subtitleController.dispose();
+      imageUrlController.dispose();
+      linkUrlController.dispose();
+      sortOrderController.dispose();
+    }
   }
 
   @override
