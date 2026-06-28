@@ -3262,9 +3262,182 @@ class _SlidesDashboardPageState extends State<SlidesDashboardPage> {
   }
 
   Future<void> _openEditSlide(AdminSlide slide) async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('تعديل السلايد: ${slide.title ?? 'بدون عنوان'}')),
+    if (!CurrentAdminSession.canManageBranding) return;
+
+    final titleController = TextEditingController(text: slide.title ?? '');
+    final subtitleController = TextEditingController(
+      text: slide.subtitle ?? '',
     );
+    final imageUrlController = TextEditingController(text: slide.imageUrl);
+    final linkUrlController = TextEditingController(text: slide.linkUrl ?? '');
+    final sortOrderController = TextEditingController(
+      text: slide.sortOrder.toString(),
+    );
+    var status = slide.status == 'inactive' ? 'inactive' : 'active';
+    var saving = false;
+
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) {
+          return StatefulBuilder(
+            builder: (dialogContext, setDialogState) {
+              return AlertDialog(
+                title: const Text('تعديل السلايد'),
+                content: SizedBox(
+                  width: 520,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextField(
+                          controller: titleController,
+                          decoration: const InputDecoration(
+                            labelText: 'العنوان',
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: subtitleController,
+                          decoration: const InputDecoration(labelText: 'الوصف'),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: imageUrlController,
+                          decoration: const InputDecoration(
+                            labelText: 'رابط الصورة',
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: linkUrlController,
+                          decoration: const InputDecoration(
+                            labelText: 'رابط الانتقال',
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: sortOrderController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'الترتيب',
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<String>(
+                          value: status,
+                          decoration: const InputDecoration(
+                            labelText: 'الحالة',
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'active',
+                              child: Text('فعال'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'inactive',
+                              child: Text('غير فعال'),
+                            ),
+                          ],
+                          onChanged: saving
+                              ? null
+                              : (value) => setDialogState(
+                                  () => status = value ?? 'active',
+                                ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: saving
+                        ? null
+                        : () => Navigator.of(dialogContext).pop(),
+                    child: const Text('إلغاء'),
+                  ),
+                  FilledButton.icon(
+                    onPressed: saving
+                        ? null
+                        : () async {
+                            final imageUrl = imageUrlController.text.trim();
+                            final sortOrder = int.tryParse(
+                              sortOrderController.text.trim(),
+                            );
+                            final messenger = ScaffoldMessenger.of(
+                              dialogContext,
+                            );
+                            final navigator = Navigator.of(dialogContext);
+                            if (imageUrl.isEmpty) {
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('رابط الصورة مطلوب'),
+                                ),
+                              );
+                              return;
+                            }
+                            if (sortOrder == null) {
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('الترتيب يجب أن يكون رقماً'),
+                                ),
+                              );
+                              return;
+                            }
+                            setDialogState(() => saving = true);
+                            try {
+                              await _api.updateSlide(
+                                slide.id,
+                                CreateSlideRequest(
+                                  title: _nullableString(titleController.text),
+                                  subtitle: _nullableString(
+                                    subtitleController.text,
+                                  ),
+                                  imageUrl: imageUrl,
+                                  linkUrl: _nullableString(
+                                    linkUrlController.text,
+                                  ),
+                                  sortOrder: sortOrder,
+                                  status: status,
+                                ),
+                              );
+                              if (!mounted) return;
+                              navigator.pop();
+                              _reload();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('تم تعديل السلايد'),
+                                ),
+                              );
+                            } catch (error) {
+                              setDialogState(() => saving = false);
+                              messenger.showSnackBar(
+                                SnackBar(content: Text(error.toString())),
+                              );
+                            }
+                          },
+                    icon: saving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.save_outlined),
+                    label: Text(saving ? 'جاري الحفظ' : 'حفظ'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      titleController.dispose();
+      subtitleController.dispose();
+      imageUrlController.dispose();
+      linkUrlController.dispose();
+      sortOrderController.dispose();
+    }
   }
 
   Future<void> _pickAndUploadSlideImage(
