@@ -3261,6 +3261,12 @@ class _SlidesDashboardPageState extends State<SlidesDashboardPage> {
     }
   }
 
+  Future<void> _openEditSlide(AdminSlide slide) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('تعديل السلايد: ${slide.title ?? 'بدون عنوان'}')),
+    );
+  }
+
   Future<void> _pickAndUploadSlideImage(
     TextEditingController imageUrlController,
   ) async {
@@ -3695,6 +3701,18 @@ class _SlidesDashboardPageState extends State<SlidesDashboardPage> {
                                             const SizedBox(height: 14),
                                             _SlideInfo(slide: slide),
                                             if (CurrentAdminSession
+                                                .canManageBranding) ...[
+                                              const SizedBox(height: 12),
+                                              FilledButton.icon(
+                                                onPressed: () =>
+                                                    _openEditSlide(slide),
+                                                icon: const Icon(
+                                                  Icons.edit_outlined,
+                                                ),
+                                                label: const Text('تعديل'),
+                                              ),
+                                            ],
+                                            if (CurrentAdminSession
                                                     .canManageBranding &&
                                                 slide.status != 'inactive') ...[
                                               const SizedBox(height: 12),
@@ -3723,6 +3741,18 @@ class _SlidesDashboardPageState extends State<SlidesDashboardPage> {
                                             Expanded(
                                               child: _SlideInfo(slide: slide),
                                             ),
+                                            if (CurrentAdminSession
+                                                .canManageBranding) ...[
+                                              const SizedBox(width: 12),
+                                              FilledButton.icon(
+                                                onPressed: () =>
+                                                    _openEditSlide(slide),
+                                                icon: const Icon(
+                                                  Icons.edit_outlined,
+                                                ),
+                                                label: const Text('تعديل'),
+                                              ),
+                                            ],
                                             if (CurrentAdminSession
                                                     .canManageBranding &&
                                                 slide.status != 'inactive') ...[
