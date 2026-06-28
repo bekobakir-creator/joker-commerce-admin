@@ -512,6 +512,81 @@ class AdminApi {
         .toList();
   }
 
+  Future<List<AdminCategory>> fetchAdminCategories() async {
+    final uri = Uri.parse('$baseUrl/admin/categories?tenant=$tenantCode');
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'X-Tenant-Code': tenantCode,
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Admin Categories API Error ${response.statusCode}: ${response.body}');
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    final list = json['data'] as List<dynamic>? ?? [];
+
+    return list
+        .map((item) => AdminCategory.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> createCategory(CreateCategoryRequest request) async {
+    final uri = Uri.parse('$baseUrl/admin/categories?tenant=$tenantCode');
+
+    final response = await http.post(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-Tenant-Code': tenantCode,
+      },
+      body: jsonEncode(request.toJson()),
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception('Create Category API Error ${response.statusCode}: ${response.body}');
+    }
+  }
+
+  Future<void> updateCategory(int categoryId, CreateCategoryRequest request) async {
+    final uri = Uri.parse('$baseUrl/admin/categories/$categoryId?tenant=$tenantCode');
+
+    final response = await http.put(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-Tenant-Code': tenantCode,
+      },
+      body: jsonEncode(request.toJson()),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Update Category API Error ${response.statusCode}: ${response.body}');
+    }
+  }
+
+  Future<void> deactivateCategory(int categoryId) async {
+    final uri = Uri.parse('$baseUrl/admin/categories/$categoryId?tenant=$tenantCode');
+
+    final response = await http.delete(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'X-Tenant-Code': tenantCode,
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Deactivate Category API Error ${response.statusCode}: ${response.body}');
+    }
+  }
+
   Future<String> uploadProductImage({
     required List<int> bytes,
     required String fileName,
@@ -980,17 +1055,76 @@ class AdminApi {
 class AdminCategory {
   const AdminCategory({
     required this.id,
+    this.parentId,
     required this.name,
+    required this.slug,
+    this.description,
+    this.imageUrl,
+    required this.sortOrder,
+    required this.status,
   });
 
   final int id;
+  final int? parentId;
   final String name;
+  final String slug;
+  final String? description;
+  final String? imageUrl;
+  final int sortOrder;
+  final String status;
+
+  bool get isActive => status == 'active';
+  String get statusLabel => isActive ? 'فعال' : 'غير فعال';
 
   factory AdminCategory.fromJson(Map<String, dynamic> json) {
     return AdminCategory(
       id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      parentId: int.tryParse(json['parent_id']?.toString() ?? ''),
       name: json['name']?.toString() ?? '',
+      slug: json['slug']?.toString() ?? '',
+      description: json['description']?.toString(),
+      imageUrl: json['image_url']?.toString(),
+      sortOrder: int.tryParse(json['sort_order']?.toString() ?? '0') ?? 0,
+      status: json['status']?.toString() ?? 'active',
     );
+  }
+
+  bool matches(String query) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return true;
+
+    return name.toLowerCase().contains(q) ||
+        slug.toLowerCase().contains(q) ||
+        (description ?? '').toLowerCase().contains(q);
+  }
+}
+
+class CreateCategoryRequest {
+  const CreateCategoryRequest({
+    required this.name,
+    this.slug,
+    this.description,
+    this.imageUrl,
+    required this.sortOrder,
+    required this.status,
+  });
+
+  final String name;
+  final String? slug;
+  final String? description;
+  final String? imageUrl;
+  final int sortOrder;
+  final String status;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'slug': slug,
+      'description': description,
+      'image_url': imageUrl,
+      'sort_order': sortOrder,
+      'status': status,
+    };
   }
 }
 
@@ -1509,6 +1643,350 @@ class AdminAccount {
   }
 
   String get statusLabel => isActive ? 'فعال' : 'معطل';
+}
+
+
+class CategoriesDashboardPage extends StatefulWidget {
+  const CategoriesDashboardPage({super.key});
+
+  @override
+  State<CategoriesDashboardPage> createState() => _CategoriesDashboardPageState();
+}
+
+class _CategoriesDashboardPageState extends State<CategoriesDashboardPage> {
+  final AdminApi _api = AdminApi();
+  final TextEditingController _searchController = TextEditingController();
+
+  late Future<List<AdminCategory>> _future;
+  String _search = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _api.fetchAdminCategories();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _reload() async {
+    setState(() {
+      _future = _api.fetchAdminCategories();
+    });
+    await _future;
+  }
+
+  Future<void> _openCategoryDialog([AdminCategory? category]) async {
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController(text: category?.name ?? '');
+    final slugController = TextEditingController(text: category?.slug ?? '');
+    final descriptionController = TextEditingController(text: category?.description ?? '');
+    final imageUrlController = TextEditingController(text: category?.imageUrl ?? '');
+    final sortOrderController = TextEditingController(text: (category?.sortOrder ?? 0).toString());
+    var status = category?.status ?? 'active';
+    var saving = false;
+
+    try {
+      final saved = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) {
+          return StatefulBuilder(
+            builder: (context, setDialogState) {
+              return AlertDialog(
+                title: Text(category == null ? 'إضافة قسم' : 'تعديل قسم'),
+                content: SizedBox(
+                  width: 440,
+                  child: Form(
+                    key: formKey,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextFormField(
+                            controller: nameController,
+                            decoration: const InputDecoration(labelText: 'اسم القسم'),
+                            validator: (value) => value == null || value.trim().isEmpty ? 'مطلوب' : null,
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: slugController,
+                            decoration: const InputDecoration(labelText: 'الرابط المختصر اختياري'),
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: descriptionController,
+                            maxLines: 3,
+                            decoration: const InputDecoration(labelText: 'الوصف اختياري'),
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: imageUrlController,
+                            decoration: const InputDecoration(labelText: 'رابط الصورة اختياري'),
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: sortOrderController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: 'الترتيب'),
+                          ),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<String>(
+                            value: status,
+                            decoration: const InputDecoration(labelText: 'الحالة'),
+                            items: const [
+                              DropdownMenuItem(value: 'active', child: Text('فعال')),
+                              DropdownMenuItem(value: 'inactive', child: Text('غير فعال')),
+                            ],
+                            onChanged: saving ? null : (value) => setDialogState(() => status = value ?? 'active'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: saving ? null : () => Navigator.of(dialogContext).pop(false),
+                    child: const Text('إلغاء'),
+                  ),
+                  FilledButton.icon(
+                    onPressed: saving
+                        ? null
+                        : () async {
+                            if (!(formKey.currentState?.validate() ?? false)) return;
+
+                            final request = CreateCategoryRequest(
+                              name: nameController.text.trim(),
+                              slug: slugController.text.trim().isEmpty ? null : slugController.text.trim(),
+                              description: descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
+                              imageUrl: imageUrlController.text.trim().isEmpty ? null : imageUrlController.text.trim(),
+                              sortOrder: int.tryParse(sortOrderController.text.trim()) ?? 0,
+                              status: status,
+                            );
+
+                            setDialogState(() => saving = true);
+
+                            try {
+                              if (category == null) {
+                                await _api.createCategory(request);
+                              } else {
+                                await _api.updateCategory(category.id, request);
+                              }
+
+                              if (dialogContext.mounted) {
+                                Navigator.of(dialogContext).pop(true);
+                              }
+                            } catch (error) {
+                              setDialogState(() => saving = false);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
+                              }
+                            }
+                          },
+                    icon: saving
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.save_outlined),
+                    label: Text(saving ? 'جاري الحفظ' : 'حفظ'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+
+      if (saved == true) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(category == null ? 'تم إضافة القسم' : 'تم تعديل القسم')),
+        );
+        await _reload();
+      }
+    } finally {
+      nameController.dispose();
+      slugController.dispose();
+      descriptionController.dispose();
+      imageUrlController.dispose();
+      sortOrderController.dispose();
+    }
+  }
+
+  Future<void> _deactivate(AdminCategory category) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('تعطيل القسم'),
+        content: Text('هل تريد تعطيل قسم "${category.name}"؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('تعطيل'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await _api.deactivateCategory(category.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تعطيل القسم')));
+      await _reload();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
+    }
+  }
+
+  Widget _content({required bool isMobile}) {
+    return Container(
+      color: const Color(0xFFF1F5F9),
+      child: RefreshIndicator(
+        onRefresh: _reload,
+        child: FutureBuilder<List<AdminCategory>>(
+          future: _future,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (snapshot.hasError) {
+              return ListView(
+                padding: const EdgeInsets.all(24),
+                children: [
+                  Card(child: Padding(padding: const EdgeInsets.all(18), child: Text(snapshot.error.toString()))),
+                ],
+              );
+            }
+
+            final categories = (snapshot.data ?? []).where((category) => category.matches(_search)).toList();
+
+            return ListView(
+              padding: EdgeInsets.all(isMobile ? 16 : 28),
+              children: [
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'الأقسام',
+                        style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                      ),
+                    ),
+                    IconButton(onPressed: _reload, icon: const Icon(Icons.refresh)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'إدارة أقسام المتجر الحالي.',
+                  style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 18),
+                TextField(
+                  controller: _searchController,
+                  decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'بحث عن قسم'),
+                  onChanged: (value) => setState(() => _search = value),
+                ),
+                const SizedBox(height: 18),
+                if (categories.isEmpty)
+                  const Card(child: Padding(padding: EdgeInsets.all(24), child: Center(child: Text('لا توجد أقسام'))))
+                else
+                  ...categories.map((category) {
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: ListTile(
+                        title: Text(category.name, style: const TextStyle(fontWeight: FontWeight.w900)),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              MiniTag(category.slug.isEmpty ? 'بدون رابط' : category.slug),
+                              MiniTag(category.statusLabel),
+                              MiniTag('ترتيب: ${category.sortOrder}'),
+                              if ((category.description ?? '').isNotEmpty) MiniTag(category.description!),
+                            ],
+                          ),
+                        ),
+                        trailing: CurrentAdminSession.canManageProducts
+                            ? Wrap(
+                                spacing: 6,
+                                children: [
+                                  IconButton(
+                                    onPressed: () => _openCategoryDialog(category),
+                                    icon: const Icon(Icons.edit_outlined),
+                                    tooltip: 'تعديل',
+                                  ),
+                                  IconButton(
+                                    onPressed: category.isActive ? () => _deactivate(category) : null,
+                                    icon: const Icon(Icons.block_outlined),
+                                    tooltip: 'تعطيل',
+                                  ),
+                                ],
+                              )
+                            : null,
+                      ),
+                    );
+                  }),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isMobile = MediaQuery.sizeOf(context).width < 900;
+
+    if (isMobile) {
+      return Scaffold(
+        drawer: const Drawer(child: AdminSidebar(isDrawer: true, selectedSection: 'categories')),
+        appBar: AppBar(
+          title: const Text('الأقسام'),
+          backgroundColor: const Color(0xFF0F172A),
+          foregroundColor: Colors.white,
+          actions: [
+            if (CurrentAdminSession.canManageProducts)
+              IconButton(onPressed: () => _openCategoryDialog(), icon: const Icon(Icons.add)),
+          ],
+        ),
+        body: _content(isMobile: true),
+        floatingActionButton: CurrentAdminSession.canManageProducts
+            ? FloatingActionButton.extended(
+                onPressed: () => _openCategoryDialog(),
+                icon: const Icon(Icons.add),
+                label: const Text('إضافة'),
+              )
+            : null,
+      );
+    }
+
+    return Scaffold(
+      body: Row(
+        children: [
+          const AdminSidebar(selectedSection: 'categories'),
+          Expanded(child: _content(isMobile: false)),
+        ],
+      ),
+      floatingActionButton: CurrentAdminSession.canManageProducts
+          ? FloatingActionButton.extended(
+              onPressed: () => _openCategoryDialog(),
+              icon: const Icon(Icons.add),
+              label: const Text('إضافة قسم'),
+            )
+          : null,
+    );
+  }
 }
 
 class ProductsDashboardPage extends StatefulWidget {
@@ -2454,6 +2932,21 @@ class _AdminSidebarState extends State<AdminSidebar> {
     );
   }
 
+  void _openCategories(BuildContext context) {
+    if (widget.selectedSection == 'categories') {
+      if (widget.isDrawer) {
+        Navigator.of(context).pop();
+      }
+      return;
+    }
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => const CategoriesDashboardPage(),
+      ),
+    );
+  }
+
   void _openOrders(BuildContext context) {
     if (widget.selectedSection == 'orders') {
       if (widget.isDrawer) {
@@ -2674,7 +3167,13 @@ class _AdminSidebarState extends State<AdminSidebar> {
                 false,
                 onTap: () => _openCreateTenantDialog(context),
               ),
-              if (CurrentAdminSession.canViewProducts) const SidebarItem(Icons.category_outlined, 'الأقسام', false),
+              if (CurrentAdminSession.canViewProducts)
+              SidebarItem(
+                Icons.category_outlined,
+                'الأقسام',
+                widget.selectedSection == 'categories',
+                onTap: () => _openCategories(context),
+              ),
               if (CurrentAdminSession.canViewProducts) const SidebarItem(Icons.storefront_outlined, 'المخازن والفروع', false),
               if (CurrentAdminSession.canViewProducts || CurrentAdminSession.canViewOrders) const SidebarItem(Icons.local_offer_outlined, 'الخصومات', false),
               if (CurrentAdminSession.canViewCommercial)
