@@ -1695,7 +1695,7 @@ class _CategoriesDashboardPageState extends State<CategoriesDashboardPage> {
         builder: (dialogContext) {
           return StatefulBuilder(
             builder: (context, setDialogState) {
-              return AlertDialog(
+              return Directionality(textDirection: TextDirection.rtl, child: AlertDialog(
                 title: Text(category == null ? 'إضافة قسم' : 'تعديل قسم'),
                 content: SizedBox(
                   width: 440,
@@ -1713,18 +1713,13 @@ class _CategoriesDashboardPageState extends State<CategoriesDashboardPage> {
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: slugController,
-                            decoration: const InputDecoration(labelText: 'الرابط المختصر اختياري'),
+                            decoration: const InputDecoration(labelText: 'كود القسم اختياري'),
                           ),
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: descriptionController,
                             maxLines: 3,
                             decoration: const InputDecoration(labelText: 'الوصف اختياري'),
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: imageUrlController,
-                            decoration: const InputDecoration(labelText: 'رابط الصورة اختياري'),
                           ),
                           const SizedBox(height: 12),
                           TextFormField(
@@ -1762,7 +1757,7 @@ class _CategoriesDashboardPageState extends State<CategoriesDashboardPage> {
                               name: nameController.text.trim(),
                               slug: slugController.text.trim().isEmpty ? null : slugController.text.trim(),
                               description: descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
-                              imageUrl: imageUrlController.text.trim().isEmpty ? null : imageUrlController.text.trim(),
+                              imageUrl: null,
                               sortOrder: int.tryParse(sortOrderController.text.trim()) ?? 0,
                               status: status,
                             );
@@ -1792,7 +1787,7 @@ class _CategoriesDashboardPageState extends State<CategoriesDashboardPage> {
                     label: Text(saving ? 'جاري الحفظ' : 'حفظ'),
                   ),
                 ],
-              );
+              ));
             },
           );
         },
