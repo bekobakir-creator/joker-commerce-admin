@@ -1967,6 +1967,7 @@ class _CategoriesDashboardPageState extends State<CategoriesDashboardPage> {
     }
 
     return Scaffold(
+      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
       body: Row(
         textDirection: TextDirection.rtl,
         children: [
