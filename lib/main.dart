@@ -3191,8 +3191,34 @@ class MiniTag extends StatelessWidget {
   }
 }
 
-class SlidesDashboardPage extends StatelessWidget {
+class SlidesDashboardPage extends StatefulWidget {
   const SlidesDashboardPage({super.key});
+
+  @override
+  State<SlidesDashboardPage> createState() => _SlidesDashboardPageState();
+}
+
+class _SlidesDashboardPageState extends State<SlidesDashboardPage> {
+  final AdminApi _api = AdminApi();
+  late Future<List<AdminSlide>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _api.fetchAdminSlides();
+  }
+
+  void _reload() {
+    setState(() {
+      _future = _api.fetchAdminSlides();
+    });
+  }
+
+  void _openAddSlide() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('إضافة السلايد بالخطوة التالية')),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -3221,6 +3247,17 @@ class SlidesDashboardPage extends StatelessWidget {
                     title: const Text('السلايدات'),
                     backgroundColor: const Color(0xFF0F172A),
                     foregroundColor: Colors.white,
+                    actions: [
+                      IconButton(
+                        onPressed: _reload,
+                        icon: const Icon(Icons.refresh),
+                      ),
+                      if (CurrentAdminSession.canManageBranding)
+                        IconButton(
+                          onPressed: _openAddSlide,
+                          icon: const Icon(Icons.add),
+                        ),
+                    ],
                   )
                 : null,
             body: Row(
@@ -3228,7 +3265,7 @@ class SlidesDashboardPage extends StatelessWidget {
                 if (!isMobile) const AdminSidebar(selectedSection: 'slides'),
                 Expanded(
                   child: FutureBuilder<List<AdminSlide>>(
-                    future: AdminApi().fetchAdminSlides(),
+                    future: _future,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());
@@ -3310,6 +3347,20 @@ class SlidesDashboardPage extends StatelessWidget {
                                     ],
                                   ),
                                 ),
+                                OutlinedButton.icon(
+                                  onPressed: _reload,
+                                  icon: const Icon(Icons.refresh),
+                                  label: const Text('تحديث'),
+                                ),
+                                if (CurrentAdminSession.canManageBranding) ...[
+                                  const SizedBox(width: 10),
+                                  FilledButton.icon(
+                                    onPressed: _openAddSlide,
+                                    icon: const Icon(Icons.add),
+                                    label: const Text('إضافة سلايد'),
+                                  ),
+                                ],
+                                const SizedBox(width: 10),
                                 MiniTag('${slides.length} سلايد'),
                               ],
                             ),
