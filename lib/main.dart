@@ -2056,7 +2056,7 @@ class _CategoriesDashboardPageState extends State<CategoriesDashboardPage> {
     }
   }
 
-  Widget _content({required bool isMobile}) {
+  Widget _content({required bool isMobilee}) {
     return Container(
       color: const Color(0xFFF1F5F9),
       child: RefreshIndicator(
@@ -2087,7 +2087,7 @@ class _CategoriesDashboardPageState extends State<CategoriesDashboardPage> {
                 .toList();
 
             return ListView(
-              padding: EdgeInsets.all(isMobile ? 16 : 28),
+              padding: EdgeInsets.all(isMobilee ? 16 : 28),
               children: [
                 Row(
                   children: [
@@ -2192,9 +2192,9 @@ class _CategoriesDashboardPageState extends State<CategoriesDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.sizeOf(context).width < 900;
+    final isMobilee = MediaQuery.sizeOf(context).width < 900;
 
-    if (isMobile) {
+    if (isMobilee) {
       return Scaffold(
         drawer: const Drawer(
           child: AdminSidebar(isDrawer: true, selectedSection: 'categories'),
@@ -2213,7 +2213,7 @@ class _CategoriesDashboardPageState extends State<CategoriesDashboardPage> {
         ),
         body: Directionality(
           textDirection: TextDirection.rtl,
-          child: _content(isMobile: true),
+          child: _content(isMobilee: true),
         ),
         floatingActionButton: CurrentAdminSession.canManageProducts
             ? FloatingActionButton.extended(
@@ -2234,7 +2234,7 @@ class _CategoriesDashboardPageState extends State<CategoriesDashboardPage> {
           Expanded(
             child: Directionality(
               textDirection: TextDirection.rtl,
-              child: _content(isMobile: false),
+              child: _content(isMobilee: false),
             ),
           ),
         ],
@@ -2337,9 +2337,9 @@ class _ProductsDashboardPageState extends State<ProductsDashboardPage> {
       textDirection: TextDirection.rtl,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isMobile = constraints.maxWidth < 720;
+          final isMobilee = constraints.maxWidth < 720;
 
-          if (isMobile) {
+          if (isMobilee) {
             return Scaffold(
               appBar: AppBar(
                 backgroundColor: Colors.white,
@@ -2373,7 +2373,7 @@ class _ProductsDashboardPageState extends State<ProductsDashboardPage> {
                 onReload: _reload,
                 onAdd: _openAddProductDialog,
                 onEdit: _openEditProductDialog,
-                isMobile: true,
+                isMobilee: true,
               ),
             );
           }
@@ -2390,7 +2390,7 @@ class _ProductsDashboardPageState extends State<ProductsDashboardPage> {
                     onReload: _reload,
                     onAdd: _openAddProductDialog,
                     onEdit: _openEditProductDialog,
-                    isMobile: false,
+                    isMobilee: false,
                   ),
                 ),
               ],
@@ -2411,7 +2411,7 @@ class DashboardBody extends StatelessWidget {
     required this.onReload,
     required this.onAdd,
     required this.onEdit,
-    required this.isMobile,
+    required this.isMobilee,
   });
 
   final Future<List<AdminProduct>> future;
@@ -2420,11 +2420,11 @@ class DashboardBody extends StatelessWidget {
   final VoidCallback onReload;
   final VoidCallback onAdd;
   final ValueChanged<AdminProduct> onEdit;
-  final bool isMobile;
+  final bool isMobilee;
 
   @override
   Widget build(BuildContext context) {
-    final padding = isMobile ? 14.0 : 22.0;
+    final padding = isMobilee ? 14.0 : 22.0;
 
     return Container(
       color: const Color(0xFFF1F5F9),
@@ -2434,7 +2434,7 @@ class DashboardBody extends StatelessWidget {
             searchController: searchController,
             onReload: onReload,
             onAdd: onAdd,
-            isMobile: isMobile,
+            isMobilee: isMobilee,
           ),
           Expanded(
             child: FutureBuilder<List<AdminProduct>>(
@@ -2456,7 +2456,7 @@ class DashboardBody extends StatelessWidget {
                     .where((p) => p.matches(search))
                     .toList();
 
-                if (isMobile) {
+                if (isMobilee) {
                   return RefreshIndicator(
                     onRefresh: () async => onReload(),
                     child: ListView(
@@ -2469,7 +2469,7 @@ class DashboardBody extends StatelessWidget {
                           padding: EdgeInsets.fromLTRB(padding, 0, padding, 14),
                           child: SummaryGrid(
                             products: allProducts,
-                            isMobile: true,
+                            isMobilee: true,
                           ),
                         ),
                         Padding(
@@ -2527,7 +2527,7 @@ class DashboardBody extends StatelessWidget {
                       padding: EdgeInsets.fromLTRB(padding, 0, padding, 14),
                       child: SummaryGrid(
                         products: allProducts,
-                        isMobile: isMobile,
+                        isMobilee: isMobilee,
                       ),
                     ),
                     Padding(
@@ -2569,7 +2569,7 @@ class DashboardBody extends StatelessWidget {
                               itemBuilder: (context, index) {
                                 final product = products[index];
 
-                                if (isMobile) {
+                                if (isMobilee) {
                                   return MobileProductCard(
                                     product: product,
                                     onEdit: () => onEdit(product),
@@ -2600,19 +2600,19 @@ class DashboardHeader extends StatelessWidget {
     required this.searchController,
     required this.onReload,
     required this.onAdd,
-    required this.isMobile,
+    required this.isMobilee,
   });
 
   final TextEditingController searchController;
   final VoidCallback onReload;
   final VoidCallback onAdd;
-  final bool isMobile;
+  final bool isMobilee;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.all(isMobile ? 14 : 22),
-      padding: EdgeInsets.all(isMobile ? 18 : 22),
+      margin: EdgeInsets.all(isMobilee ? 14 : 22),
+      padding: EdgeInsets.all(isMobilee ? 18 : 22),
       decoration: BoxDecoration(
         color: const Color(0xFF0F172A),
         borderRadius: BorderRadius.circular(28),
@@ -2624,7 +2624,7 @@ class DashboardHeader extends StatelessWidget {
           ),
         ],
       ),
-      child: isMobile
+      child: isMobilee
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -2740,11 +2740,11 @@ class SummaryGrid extends StatelessWidget {
   const SummaryGrid({
     super.key,
     required this.products,
-    required this.isMobile,
+    required this.isMobilee,
   });
 
   final List<AdminProduct> products;
-  final bool isMobile;
+  final bool isMobilee;
 
   @override
   Widget build(BuildContext context) {
@@ -2782,8 +2782,8 @@ class SummaryGrid extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columns = isMobile ? 2 : 5;
-        final gap = isMobile ? 10.0 : 12.0;
+        final columns = isMobilee ? 2 : 5;
+        final gap = isMobilee ? 10.0 : 12.0;
         final width = (constraints.maxWidth - (gap * (columns - 1))) / columns;
 
         return Wrap(
@@ -2793,7 +2793,7 @@ class SummaryGrid extends StatelessWidget {
               .map(
                 (card) => SizedBox(
                   width: width,
-                  child: SummaryCard(data: card, compact: isMobile),
+                  child: SummaryCard(data: card, compact: isMobilee),
                 ),
               )
               .toList(),
@@ -3191,6 +3191,83 @@ class MiniTag extends StatelessWidget {
   }
 }
 
+class SlidesDashboardPage extends StatelessWidget {
+  const SlidesDashboardPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!CurrentAdminSession.canViewBranding) {
+      return CurrentAdminSession.defaultHomePage();
+    }
+
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobilee = constraints.maxWidth < 760;
+
+          return Scaffold(
+            backgroundColor: const Color(0xFFF1F5F9),
+            drawer: isMobilee
+                ? const Drawer(
+                    child: AdminSidebar(
+                      isDrawer: true,
+                      selectedSection: 'slides',
+                    ),
+                  )
+                : null,
+            appBar: isMobilee
+                ? AppBar(
+                    title: const Text('السلايدات '),
+                    backgroundColor: const Color(0xFF0F172A),
+                    foregroundColor: Colors.white,
+                  )
+                : null,
+            body: Row(
+              children: [
+                if (!isMobilee) const AdminSidebar(selectedSection: 'slides'),
+                Expanded(
+                  child: Center(
+                    child: Card(
+                      margin: const EdgeInsets.all(24),
+                      child: Padding(
+                        padding: const EdgeInsets.all(28),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(
+                              Icons.slideshow_outlined,
+                              size: 54,
+                              color: Color(0xFF0F172A),
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'إدارة السلايدات ',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'الصفحة انضافت. الخطوة التالية نربط القائمة والتعديل ورفع الصور.',
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
 class AdminSidebar extends StatefulWidget {
   const AdminSidebar({
     super.key,
@@ -3277,6 +3354,19 @@ class _AdminSidebarState extends State<AdminSidebar> {
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const CommercialSettingsPage()),
+    );
+  }
+
+  void _openSlides(BuildContext context) {
+    if (widget.selectedSection == 'slides') {
+      if (widget.isDrawer) {
+        Navigator.of(context).pop();
+      }
+      return;
+    }
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const SlidesDashboardPage()),
     );
   }
 
@@ -3615,6 +3705,13 @@ class _AdminSidebarState extends State<AdminSidebar> {
                   'الباقات والميزات',
                   widget.selectedSection == 'commercial',
                   onTap: () => _openCommercialSettings(context),
+                ),
+              if (CurrentAdminSession.canViewBranding)
+                SidebarItem(
+                  Icons.slideshow_outlined,
+                  'السلايدات',
+                  widget.selectedSection == 'slides',
+                  onTap: () => _openSlides(context),
                 ),
               if (CurrentAdminSession.canViewBranding)
                 SidebarItem(
@@ -4261,10 +4358,10 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
       textDirection: TextDirection.rtl,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isMobile = constraints.maxWidth < 900;
+          final isMobilee = constraints.maxWidth < 900;
 
           return Scaffold(
-            drawer: isMobile
+            drawer: isMobilee
                 ? const Drawer(
                     child: AdminSidebar(
                       isDrawer: true,
@@ -4272,7 +4369,7 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
                     ),
                   )
                 : null,
-            appBar: isMobile
+            appBar: isMobilee
                 ? AppBar(
                     title: const Text('إدارة الحسابات'),
                     backgroundColor: const Color(0xFF0F172A),
@@ -4294,7 +4391,7 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
                 : null,
             body: Row(
               children: [
-                if (!isMobile) const AdminSidebar(selectedSection: 'accounts'),
+                if (!isMobilee) const AdminSidebar(selectedSection: 'accounts'),
                 Expanded(
                   child: Container(
                     color: const Color(0xFFF1F5F9),
@@ -4312,10 +4409,10 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
 
                           if (snapshot.hasError) {
                             return ListView(
-                              padding: EdgeInsets.all(isMobile ? 14 : 24),
+                              padding: EdgeInsets.all(isMobilee ? 14 : 24),
                               children: [
                                 _AccountsHeader(
-                                  isMobile: isMobile,
+                                  isMobilee: isMobilee,
                                   onReload: _reload,
                                 ),
                                 const SizedBox(height: 18),
@@ -4331,10 +4428,10 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
 
                           return ListView(
                             physics: const AlwaysScrollableScrollPhysics(),
-                            padding: EdgeInsets.all(isMobile ? 14 : 24),
+                            padding: EdgeInsets.all(isMobilee ? 14 : 24),
                             children: [
                               _AccountsHeader(
-                                isMobile: isMobile,
+                                isMobilee: isMobilee,
                                 onReload: _reload,
                               ),
                               const SizedBox(height: 18),
@@ -4405,7 +4502,7 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
                                     padding: const EdgeInsets.only(bottom: 12),
                                     child: AccountCard(
                                       account: account,
-                                      isMobile: isMobile,
+                                      isMobilee: isMobilee,
                                       onToggleStatus: () =>
                                           _toggleAccountStatus(account),
                                       onEdit: () =>
@@ -4435,15 +4532,15 @@ class _AccountsDashboardPageState extends State<AccountsDashboardPage> {
 }
 
 class _AccountsHeader extends StatelessWidget {
-  const _AccountsHeader({required this.isMobile, required this.onReload});
+  const _AccountsHeader({required this.isMobilee, required this.onReload});
 
-  final bool isMobile;
+  final bool isMobilee;
   final Future<void> Function() onReload;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(isMobile ? 18 : 24),
+      padding: EdgeInsets.all(isMobilee ? 18 : 24),
       decoration: BoxDecoration(
         color: const Color(0xFF0F172A),
         borderRadius: BorderRadius.circular(26),
@@ -4479,7 +4576,7 @@ class _AccountsHeader extends StatelessWidget {
               ],
             ),
           ),
-          if (!isMobile)
+          if (!isMobilee)
             OutlinedButton.icon(
               onPressed: onReload,
               style: OutlinedButton.styleFrom(foregroundColor: Colors.white),
@@ -4544,14 +4641,14 @@ class AccountCard extends StatelessWidget {
   const AccountCard({
     super.key,
     required this.account,
-    required this.isMobile,
+    required this.isMobilee,
     required this.onToggleStatus,
     required this.onEdit,
     required this.onChangePassword,
   });
 
   final AdminAccount account;
-  final bool isMobile;
+  final bool isMobilee;
   final VoidCallback onToggleStatus;
   final VoidCallback onEdit;
   final VoidCallback onChangePassword;
@@ -4562,7 +4659,7 @@ class AccountCard extends StatelessWidget {
         ? const Color(0xFF16A34A)
         : const Color(0xFFDC2626);
 
-    if (isMobile) {
+    if (isMobilee) {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: cardDecoration(),
@@ -4823,9 +4920,9 @@ class _OrdersDashboardPageState extends State<OrdersDashboardPage> {
       textDirection: TextDirection.rtl,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isMobile = constraints.maxWidth < 720;
+          final isMobilee = constraints.maxWidth < 720;
 
-          if (isMobile) {
+          if (isMobilee) {
             return Scaffold(
               appBar: AppBar(
                 backgroundColor: Colors.white,
@@ -4862,7 +4959,7 @@ class _OrdersDashboardPageState extends State<OrdersDashboardPage> {
                 onReload: _reload,
                 onOpenDetails: _openOrderDetails,
                 filterOrders: _filterOrders,
-                isMobile: true,
+                isMobilee: true,
               ),
             );
           }
@@ -4887,7 +4984,7 @@ class _OrdersDashboardPageState extends State<OrdersDashboardPage> {
                     onReload: _reload,
                     onOpenDetails: _openOrderDetails,
                     filterOrders: _filterOrders,
-                    isMobile: false,
+                    isMobilee: false,
                   ),
                 ),
               ],
@@ -4912,7 +5009,7 @@ class OrdersDashboardBody extends StatelessWidget {
     required this.onReload,
     required this.onOpenDetails,
     required this.filterOrders,
-    required this.isMobile,
+    required this.isMobilee,
   });
 
   final Future<List<AdminOrder>> future;
@@ -4925,11 +5022,11 @@ class OrdersDashboardBody extends StatelessWidget {
   final VoidCallback onReload;
   final ValueChanged<AdminOrder> onOpenDetails;
   final List<AdminOrder> Function(List<AdminOrder> orders) filterOrders;
-  final bool isMobile;
+  final bool isMobilee;
 
   @override
   Widget build(BuildContext context) {
-    final padding = isMobile ? 14.0 : 22.0;
+    final padding = isMobilee ? 14.0 : 22.0;
 
     return Container(
       color: const Color(0xFFF1F5F9),
@@ -4942,7 +5039,7 @@ class OrdersDashboardBody extends StatelessWidget {
             statusLabel: statusLabel,
             onStatusFilterChanged: onStatusFilterChanged,
             onReload: onReload,
-            isMobile: isMobile,
+            isMobilee: isMobilee,
           ),
           Expanded(
             child: FutureBuilder<List<AdminOrder>>(
@@ -4962,7 +5059,7 @@ class OrdersDashboardBody extends StatelessWidget {
                 final allOrders = snapshot.data ?? [];
                 final orders = filterOrders(allOrders);
 
-                if (isMobile) {
+                if (isMobilee) {
                   return RefreshIndicator(
                     onRefresh: () async => onReload(),
                     child: ListView(
@@ -4975,7 +5072,7 @@ class OrdersDashboardBody extends StatelessWidget {
                           padding: EdgeInsets.fromLTRB(padding, 0, padding, 14),
                           child: OrdersSummaryGrid(
                             orders: allOrders,
-                            isMobile: true,
+                            isMobilee: true,
                           ),
                         ),
                         Padding(
@@ -5033,7 +5130,7 @@ class OrdersDashboardBody extends StatelessWidget {
                       padding: EdgeInsets.fromLTRB(padding, 0, padding, 14),
                       child: OrdersSummaryGrid(
                         orders: allOrders,
-                        isMobile: isMobile,
+                        isMobilee: isMobilee,
                       ),
                     ),
                     Padding(
@@ -5075,7 +5172,7 @@ class OrdersDashboardBody extends StatelessWidget {
                               itemBuilder: (context, index) {
                                 final order = orders[index];
 
-                                if (isMobile) {
+                                if (isMobilee) {
                                   return MobileOrderCard(
                                     order: order,
                                     onOpenDetails: () => onOpenDetails(order),
@@ -5109,7 +5206,7 @@ class OrdersHeader extends StatelessWidget {
     required this.statusLabel,
     required this.onStatusFilterChanged,
     required this.onReload,
-    required this.isMobile,
+    required this.isMobilee,
   });
 
   final TextEditingController searchController;
@@ -5118,7 +5215,7 @@ class OrdersHeader extends StatelessWidget {
   final String Function(String status) statusLabel;
   final ValueChanged<String> onStatusFilterChanged;
   final VoidCallback onReload;
-  final bool isMobile;
+  final bool isMobilee;
 
   @override
   Widget build(BuildContext context) {
@@ -5169,8 +5266,8 @@ class OrdersHeader extends StatelessWidget {
     );
 
     return Container(
-      margin: EdgeInsets.all(isMobile ? 14 : 22),
-      padding: EdgeInsets.all(isMobile ? 18 : 22),
+      margin: EdgeInsets.all(isMobilee ? 14 : 22),
+      padding: EdgeInsets.all(isMobilee ? 18 : 22),
       decoration: BoxDecoration(
         color: const Color(0xFF0F172A),
         borderRadius: BorderRadius.circular(28),
@@ -5182,7 +5279,7 @@ class OrdersHeader extends StatelessWidget {
           ),
         ],
       ),
-      child: isMobile
+      child: isMobilee
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -5255,11 +5352,11 @@ class OrdersSummaryGrid extends StatelessWidget {
   const OrdersSummaryGrid({
     super.key,
     required this.orders,
-    required this.isMobile,
+    required this.isMobilee,
   });
 
   final List<AdminOrder> orders;
-  final bool isMobile;
+  final bool isMobilee;
 
   @override
   Widget build(BuildContext context) {
@@ -5302,8 +5399,8 @@ class OrdersSummaryGrid extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columns = isMobile ? 2 : 6;
-        final gap = isMobile ? 10.0 : 12.0;
+        final columns = isMobilee ? 2 : 6;
+        final gap = isMobilee ? 10.0 : 12.0;
         final width = (constraints.maxWidth - (gap * (columns - 1))) / columns;
 
         return Wrap(
@@ -5313,7 +5410,7 @@ class OrdersSummaryGrid extends StatelessWidget {
               .map(
                 (card) => SizedBox(
                   width: width,
-                  child: SummaryCard(data: card, compact: isMobile),
+                  child: SummaryCard(data: card, compact: isMobilee),
                 ),
               )
               .toList(),
@@ -7349,9 +7446,9 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
       textDirection: TextDirection.rtl,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isMobile = constraints.maxWidth < 720;
+          final isMobilee = constraints.maxWidth < 720;
 
-          if (isMobile) {
+          if (isMobilee) {
             return Scaffold(
               appBar: AppBar(
                 backgroundColor: Colors.white,
@@ -7378,7 +7475,7 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
               ),
               body: _BrandingSettingsBody(
                 future: _future,
-                isMobile: true,
+                isMobilee: true,
                 loadIntoForm: _loadIntoForm,
                 onReload: _reload,
                 onSave: _save,
@@ -7435,7 +7532,7 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
                 Expanded(
                   child: _BrandingSettingsBody(
                     future: _future,
-                    isMobile: false,
+                    isMobilee: false,
                     loadIntoForm: _loadIntoForm,
                     onReload: _reload,
                     onSave: _save,
@@ -7496,7 +7593,7 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
 class _BrandingSettingsBody extends StatelessWidget {
   const _BrandingSettingsBody({
     required this.future,
-    required this.isMobile,
+    required this.isMobilee,
     required this.loadIntoForm,
     required this.onReload,
     required this.onSave,
@@ -7535,7 +7632,7 @@ class _BrandingSettingsBody extends StatelessWidget {
   });
 
   final Future<AdminBrandingSettings> future;
-  final bool isMobile;
+  final bool isMobilee;
   final ValueChanged<AdminBrandingSettings> loadIntoForm;
   final VoidCallback onReload;
   final VoidCallback onSave;
@@ -7604,10 +7701,10 @@ class _BrandingSettingsBody extends StatelessWidget {
           }
 
           return ListView(
-            padding: EdgeInsets.all(isMobile ? 14 : 24),
+            padding: EdgeInsets.all(isMobilee ? 14 : 24),
             children: [
               _BrandingHeader(
-                isMobile: isMobile,
+                isMobilee: isMobilee,
                 onReload: onReload,
                 onSave: onSave,
                 isSaving: isSaving,
@@ -7617,7 +7714,7 @@ class _BrandingSettingsBody extends StatelessWidget {
                 title: 'معلومات المتجر',
                 children: [
                   _ResponsiveFields(
-                    isNarrow: isMobile,
+                    isNarrow: isMobilee,
                     children: [
                       _SettingTextField(
                         controller: appNameController,
@@ -7638,7 +7735,7 @@ class _BrandingSettingsBody extends StatelessWidget {
                 title: 'الشعارات والصور',
                 children: [
                   _ResponsiveFields(
-                    isNarrow: isMobile,
+                    isNarrow: isMobilee,
                     children: [
                       _SettingTextField(
                         controller: logoUrlController,
@@ -7669,7 +7766,7 @@ class _BrandingSettingsBody extends StatelessWidget {
                 title: 'الألوان والخط',
                 children: [
                   _ResponsiveFields(
-                    isNarrow: isMobile,
+                    isNarrow: isMobilee,
                     children: [
                       _SettingTextField(
                         controller: primaryColorController,
@@ -7715,7 +7812,7 @@ class _BrandingSettingsBody extends StatelessWidget {
                 title: 'اللغة والعملة',
                 children: [
                   _ResponsiveFields(
-                    isNarrow: isMobile,
+                    isNarrow: isMobilee,
                     children: [
                       _SettingTextField(
                         controller: currencyCodeController,
@@ -7754,7 +7851,7 @@ class _BrandingSettingsBody extends StatelessWidget {
                 title: 'التواصل والسوشيال',
                 children: [
                   _ResponsiveFields(
-                    isNarrow: isMobile,
+                    isNarrow: isMobilee,
                     children: [
                       _SettingTextField(
                         controller: supportPhoneController,
@@ -7804,7 +7901,7 @@ class _BrandingSettingsBody extends StatelessWidget {
                     ),
                   ),
                   _ResponsiveFields(
-                    isNarrow: isMobile,
+                    isNarrow: isMobilee,
                     children: [
                       DropdownButtonFormField<String>(
                         value: deliveryFeeType,
@@ -7845,7 +7942,7 @@ class _BrandingSettingsBody extends StatelessWidget {
                 title: 'الروابط القانونية',
                 children: [
                   _ResponsiveFields(
-                    isNarrow: isMobile,
+                    isNarrow: isMobilee,
                     children: [
                       _SettingTextField(
                         controller: privacyPolicyUrlController,
@@ -7892,13 +7989,13 @@ class _BrandingSettingsBody extends StatelessWidget {
 
 class _BrandingHeader extends StatelessWidget {
   const _BrandingHeader({
-    required this.isMobile,
+    required this.isMobilee,
     required this.onReload,
     required this.onSave,
     required this.isSaving,
   });
 
-  final bool isMobile;
+  final bool isMobilee;
   final VoidCallback onReload;
   final VoidCallback onSave;
   final bool isSaving;
@@ -7920,7 +8017,7 @@ class _BrandingHeader extends StatelessWidget {
     ];
 
     return Container(
-      padding: EdgeInsets.all(isMobile ? 18 : 22),
+      padding: EdgeInsets.all(isMobilee ? 18 : 22),
       decoration: BoxDecoration(
         color: const Color(0xFF0F172A),
         borderRadius: BorderRadius.circular(28),
@@ -7932,7 +8029,7 @@ class _BrandingHeader extends StatelessWidget {
           ),
         ],
       ),
-      child: isMobile
+      child: isMobilee
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -8242,11 +8339,11 @@ class _CommercialSettingsPageState extends State<CommercialSettingsPage> {
       return CurrentAdminSession.defaultHomePage();
     }
 
-    final isMobile = MediaQuery.sizeOf(context).width < 900;
+    final isMobilee = MediaQuery.sizeOf(context).width < 900;
 
     final content = Scaffold(
       backgroundColor: const Color(0xFFF1F5F9),
-      drawer: isMobile
+      drawer: isMobilee
           ? const Drawer(
               child: AdminSidebar(
                 isDrawer: true,
@@ -8254,7 +8351,7 @@ class _CommercialSettingsPageState extends State<CommercialSettingsPage> {
               ),
             )
           : null,
-      appBar: isMobile
+      appBar: isMobilee
           ? AppBar(
               title: const Text('الباقات والميزات'),
               backgroundColor: const Color(0xFF0F172A),
@@ -8263,7 +8360,7 @@ class _CommercialSettingsPageState extends State<CommercialSettingsPage> {
           : null,
       body: Row(
         children: [
-          if (!isMobile) const AdminSidebar(selectedSection: 'commercial'),
+          if (!isMobilee) const AdminSidebar(selectedSection: 'commercial'),
           Expanded(
             child: RefreshIndicator(
               onRefresh: _refresh,
@@ -8279,7 +8376,7 @@ class _CommercialSettingsPageState extends State<CommercialSettingsPage> {
                     return ListView(
                       padding: const EdgeInsets.all(24),
                       children: [
-                        _CommercialHeader(isMobile: isMobile),
+                        _CommercialHeader(isMobilee: isMobilee),
                         const SizedBox(height: 20),
                         _CommercialErrorCard(
                           error: snapshot.error.toString(),
@@ -8293,9 +8390,9 @@ class _CommercialSettingsPageState extends State<CommercialSettingsPage> {
                   final plans = data?.plans ?? [];
 
                   return ListView(
-                    padding: EdgeInsets.all(isMobile ? 16 : 28),
+                    padding: EdgeInsets.all(isMobilee ? 16 : 28),
                     children: [
-                      _CommercialHeader(isMobile: isMobile),
+                      _CommercialHeader(isMobilee: isMobilee),
                       const SizedBox(height: 22),
                       _PlansSection(plans: plans),
                       const SizedBox(height: 22),
@@ -8327,14 +8424,14 @@ class _CommercialSettingsData {
 }
 
 class _CommercialHeader extends StatelessWidget {
-  const _CommercialHeader({required this.isMobile});
+  const _CommercialHeader({required this.isMobilee});
 
-  final bool isMobile;
+  final bool isMobilee;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(isMobile ? 18 : 24),
+      padding: EdgeInsets.all(isMobilee ? 18 : 24),
       decoration: cardDecoration(),
       child: Row(
         children: [
