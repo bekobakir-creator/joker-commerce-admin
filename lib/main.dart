@@ -1955,7 +1955,7 @@ class _CategoriesDashboardPageState extends State<CategoriesDashboardPage> {
               IconButton(onPressed: () => _openCategoryDialog(), icon: const Icon(Icons.add)),
           ],
         ),
-        body: _content(isMobile: true),
+        body: Directionality(textDirection: TextDirection.rtl, child: _content(isMobile: true)),
         floatingActionButton: CurrentAdminSession.canManageProducts
             ? FloatingActionButton.extended(
                 onPressed: () => _openCategoryDialog(),
@@ -1968,9 +1968,10 @@ class _CategoriesDashboardPageState extends State<CategoriesDashboardPage> {
 
     return Scaffold(
       body: Row(
+        textDirection: TextDirection.rtl,
         children: [
           const AdminSidebar(selectedSection: 'categories'),
-          Expanded(child: _content(isMobile: false)),
+          Expanded(child: Directionality(textDirection: TextDirection.rtl, child: _content(isMobile: false))),
         ],
       ),
       floatingActionButton: CurrentAdminSession.canManageProducts
